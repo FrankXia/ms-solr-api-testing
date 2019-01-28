@@ -43,21 +43,23 @@ public class FeatureServiceTester {
       if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
       if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
       if (codes.contains("3")) testGetFeaturesWithSQLIn(hostName, serverPort, tableNames);
-      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames);
+      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames, 10);
       if (codes.contains("5")) System.out.println("To be implemented!");
+
       if (codes.contains("6")) testGetFeaturesWithTimeExtent(hostName, serverPort, tableNames);
-      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames);
-      if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames);
+      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames, 15);
+      // if bounding box too small, the table/service may return 0 feature.
+      if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames, 60);
     }
   }
 
-  private static void testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(String hostName, int port, String[] tableNames) {
+  private static void testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(String hostName, int port, String[] tableNames, double boundingBoxWidth) {
     System.out.println("======== get features from each service with a 10 degree random bounding box and time extent and IN parameter ========= ");
 
     String fieldName = "orig";
     boolean isStringField = true;
 
-    String boundingBox = generateBoundingBox(10);
+    String boundingBox = generateBoundingBox(boundingBoxWidth);
     String timeFieldName = "ts";
 
     try {
@@ -72,9 +74,9 @@ public class FeatureServiceTester {
     }
   }
 
-  private static void testGFeaturesWithBoundingBoxAndTimeExtent(String hostName, int port, String[] tableNames) {
+  private static void testGFeaturesWithBoundingBoxAndTimeExtent(String hostName, int port, String[] tableNames, double boundingBoxWidth) {
     System.out.println("======== get features from each service with a 10 degree random bounding box and time extent ========= ");
-    String boundingBox = generateBoundingBox(10);
+    String boundingBox = generateBoundingBox(boundingBoxWidth);
 
     String fieldName = "ts";
     try {
@@ -127,9 +129,9 @@ public class FeatureServiceTester {
     testWithStatsAsWhereClause(fieldName, hostName, port, tableNames);
   }
 
-  private static void testGetFeaturesWithBoundingBox(String hostName, int port, String[] tableNames) {
+  private static void testGetFeaturesWithBoundingBox(String hostName, int port, String[] tableNames, double boundingBoxWidth) {
     System.out.println("======== get features from each service with a 10 degree random bounding box ========= ");
-    String boundingBox = generateBoundingBox(10);
+    String boundingBox = generateBoundingBox(boundingBoxWidth);
     for (String table: tableNames) {
       FeatureService featureService = new FeatureService(hostName, port, table);
       featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", boundingBox);
