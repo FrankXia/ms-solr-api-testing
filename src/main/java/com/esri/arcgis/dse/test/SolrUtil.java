@@ -14,9 +14,9 @@ import java.util.Optional;
 
 public class SolrUtil {
 
-  private Log LOGGER  = LogFactory.getLog(SolrUtil.class.getName());
+  private static Log LOGGER  = LogFactory.getLog(SolrUtil.class.getName());
 
-  public String createExtentFilterForSolrQuery(String geometryFieldName, String geometryType, String geometryString)  {
+  public static String createExtentFilterForSolrQuery(String geometryFieldName, String geometryType, String geometryString)  {
     Geometry geometry = createGeometry(geometryType, geometryString);
     Envelope envelope = createExtentEnvelope(geometry);
     String filter = envelope != null ?
@@ -24,7 +24,7 @@ public class SolrUtil {
     return filter;
   }
 
-  private Geometry createGeometry(String geomType, String geomString) {
+  private static Geometry createGeometry(String geomType, String geomString) {
     if (geomType != null && geomString != null) {
       if (geomType == "esriGeometryPoint") {
         return null; // FIXME: to be implemented
@@ -67,7 +67,7 @@ public class SolrUtil {
     }
   }
 
-  private Envelope createExtentEnvelope(Geometry spatialGeometry) {
+  private static Envelope createExtentEnvelope(Geometry spatialGeometry) {
     if (spatialGeometry == null) {
       return null;
     }
@@ -84,7 +84,7 @@ public class SolrUtil {
       return null;
   }
 
-  public String createFilterQueryStringForWhereClause(String where) {
+  public static String createFilterQueryStringForWhereClause(String where) {
     String sql = "SELECT * FROM dummy WHERE " + where;
     try {
       Query statement = (Query)(new SqlParser().createStatement(sql));
@@ -98,7 +98,7 @@ public class SolrUtil {
     return null;
   }
 
-  private String createFQString(Expression expr) {
+  private static String createFQString(Expression expr) {
     if (expr instanceof LogicalBinaryExpression) {
       return createFQForLogicBinaryExpression((LogicalBinaryExpression)expr);
     }
@@ -113,11 +113,11 @@ public class SolrUtil {
     }
   }
 
-  private String createFQForLogicBinaryExpression(LogicalBinaryExpression expr) {
+  private static String createFQForLogicBinaryExpression(LogicalBinaryExpression expr) {
     return "(" + createFQString(expr.getLeft()) + ") " + expr.getType() + " (" + createFQString(expr.getRight()) + ")";
   }
 
-  private String createFQForComparisonExpression(ComparisonExpression expr) {
+  private static String createFQForComparisonExpression(ComparisonExpression expr) {
     Expression left = expr.getLeft();
     Expression right = expr.getRight();
     ComparisonExpressionType op = expr.getType();
@@ -145,23 +145,23 @@ public class SolrUtil {
     }
   }
 
-  private String createFQForBetweenPredicate(BetweenPredicate expr) {
+  private static String createFQForBetweenPredicate(BetweenPredicate expr) {
     return removeDoubleQuotes(expr.getValue().toString()) +":[" + expr.getMin().toString() + " " + expr.getMax().toString()+"]";
   }
 
   // field name shouldn't use double quote as part of its name
-  private String removeDoubleQuotes(String item) {
+  private static String removeDoubleQuotes(String item) {
     return item.replaceAll("\"", "");
   }
 
   // remove only the starting and ending single quotes
-  private String removeSingleQuotes(String item) {
+  private static String removeSingleQuotes(String item) {
     String removed = (item.startsWith("'")) ? item.substring(1) : item;
     removed = (removed.endsWith("'")) ? removed.substring(0, removed.length()-1) : removed;
     return removed;
   }
 
-  public SolrClient getSolrClient(String hostName, int port, String keyspace, String tableName)  {
+  public static SolrClient getSolrClient(String hostName, int port, String keyspace, String tableName)  {
     String baseUrl = "http://" + hostName + ":" + port + "/solr/" + keyspace + "." + tableName;
     return new HttpSolrClient(baseUrl);
   }

@@ -1,15 +1,250 @@
 package com.esri.arcgis.dse.test;
 
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Random;
+import java.util.TimeZone;
+
 public class FeatureServiceTester {
 
+  private static SimpleDateFormat simpleDateFormat;
 
   public static void main(String[] args) {
-    FeatureService featureService = new FeatureService("localhost", 9000, "faa10k");
-    long totalCount = featureService.getCount("1=1");
-    System.out.println(totalCount);
 
-    featureService.getFeaturesWithWhereClauseAndRandomOffset("1=1");
+    if (args.length == 0) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <Option codes: 0 -> 8> ");
+      System.out.println("Code stands for: ");
+      System.out.println("0 -> get total counts for all services ");
+      System.out.println("1 -> all:  1=1, limit=10,000 ");
+      System.out.println("2 -> attribute range:  speed < x and speed > y, limit=10,000 for all services ");
+      System.out.println("3 -> attribute group:  flightId IN ('1234', '5678'), limit=10,000 for all services ");
+      System.out.println("4 -> spatial extent:  geometry INSIDE boundingbox, limit=10,000 for all services ");
+      System.out.println("5 -> not supported yet, spatial polygon:  geometry INSIDE stateboundary, limit=10,000 for all services ");
+      System.out.println("6 -> temporal extent:  time > t1 and time < t2, limit=10,000 for all services ");
+      System.out.println("7 -> spatiotemporal extent:  geometry INSIDE boundingbox AND time > t1 and time < t2, limit=10,000 for all services ");
+      System.out.println("8 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE boundingbox AND time > t1 and time < t2, limit=10,000 for all services ");
 
-    featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", "-45,-30,45,30");
+      System.out.println("Samples: ");
+      System.out.println("java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester 1,2,3");
+    } else {
+
+      String hostName = "localhost";
+      int serverPort = 9000;
+      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m"};
+
+      String pattern = "yyyy-MM-dd HH:mm:ss";
+      simpleDateFormat = new SimpleDateFormat(pattern);
+      simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+      String codes = args[0];
+      if (codes.contains("0")) testTotalCountForAll(hostName, serverPort, tableNames);
+      if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
+      if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
+      if (codes.contains("3")) testGetFeaturesWithSQLIn(hostName, serverPort, tableNames);
+      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames);
+      if (codes.contains("5")) System.out.println("To be implemented!");
+      if (codes.contains("6")) testGetFeaturesWithTimeExtent(hostName, serverPort, tableNames);
+      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames);
+      if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames);
+    }
+  }
+
+  private static void testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with a 10 degree random bounding box and time extent and IN parameter ========= ");
+
+    String fieldName = "orig";
+    boolean isStringField = true;
+
+    String boundingBox = generateBoundingBox(10);
+    String timeFieldName = "ts";
+
+    try {
+      for (String table : tableNames) {
+        FeatureService featureService = new FeatureService(hostName, port, table);
+        String mTimestamp = getTimeExtent(featureService, timeFieldName);
+        String where = getUniqueValuesForIN(featureService, fieldName, isStringField);
+        featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(where, boundingBox, mTimestamp);
+      }
+    }catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private static void testGFeaturesWithBoundingBoxAndTimeExtent(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with a 10 degree random bounding box and time extent ========= ");
+    String boundingBox = generateBoundingBox(10);
+
+    String fieldName = "ts";
+    try {
+      for (String table : tableNames) {
+        FeatureService featureService = new FeatureService(hostName, port, table);
+        String mTimestamp = getTimeExtent(featureService, fieldName);
+        featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent("1=1", boundingBox, mTimestamp);
+      }
+    }catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private static void testGetFeaturesWithSQLIn(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with sSQL IN (xxx,xxx) ========= ");
+    String fieldName = "plane_id";
+    boolean isStringField = false;
+
+    try {
+      for (String table : tableNames) {
+        FeatureService featureService = new FeatureService(hostName, port, table);
+        String where = getUniqueValuesForIN(featureService, fieldName, isStringField);
+        featureService.getFeaturesWithWhereClause(where);
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private static void testGetFeaturesWithTimeExtent(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with time filter ========= ");
+    String fieldName = "ts";
+    String pattern = "yyyy-MM-dd HH:mm:ss";
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+    simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    try {
+      for (String table : tableNames) {
+        FeatureService featureService = new FeatureService(hostName, port, table);
+        String mTimestamp = getTimeExtent(featureService, fieldName);
+        featureService.getFeaturesWithTimeExtent("1=1", mTimestamp);
+      }
+    }catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private static void testGetFeaturesWithSpeedRange(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with speed range ========= ");
+    String fieldName = "speed";
+    testWithStatsAsWhereClause(fieldName, hostName, port, tableNames);
+  }
+
+  private static void testGetFeaturesWithBoundingBox(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with a 10 degree random bounding box ========= ");
+    String boundingBox = generateBoundingBox(10);
+    for (String table: tableNames) {
+      FeatureService featureService = new FeatureService(hostName, port, table);
+      featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", boundingBox);
+    }
+  }
+  
+  private static void testGetFeaturesForAll(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get features from each service with a random offset ========= ");
+    for (String table: tableNames) {
+      FeatureService featureService = new FeatureService(hostName, port, table);
+      featureService.getFeaturesWithWhereClauseAndRandomOffset("1=1");
+    }
+  }
+  
+  private static void testTotalCountForAll(String hostName, int port, String[] tableNames) {
+    System.out.println("======== get total count for each service ========= ");
+    for (String table: tableNames) {
+      FeatureService featureService = new FeatureService(hostName, port, table);
+      featureService.getCount("1=1");
+    }
+  }
+
+  private static void testWithStatsAsWhereClause(String fieldName, String hostName, int port, String[] tableNames) {
+    for (String table: tableNames) {
+      FeatureService featureService = new FeatureService(hostName, port, table);
+      JSONObject stats = featureService.getStates(fieldName);
+      double min = stats.getDouble("min");
+      double max = stats.getDouble("max");
+      double random = new Random().nextDouble() * (max - min);
+      random = random < 0 ? random * (-1) : random;
+      String where = fieldName + " > " + min + " AND " + fieldName + " < " + (min + random);
+      featureService.getFeaturesWithWhereClause(where);
+    }
+  }
+
+  private static String generateBoundingBox(double width) {
+    Random random = new Random();
+    boolean sign = random.nextBoolean();
+
+    double lon = random.nextDouble();
+    double lat = random.nextDouble();
+
+    lon = sign? lon * -180 : lon * 180;
+    lat = sign? lat * -90 : lat * 90;
+
+    double minx = lon;
+    double maxx = lon;
+    if (lon + width/2.0 > 180.0) {
+      maxx = 180;
+      minx = maxx - width;
+    } else if (lon - width/2.0 < -180) {
+      minx = -180;
+      maxx = minx + width;
+    } else {
+      minx = lon - width/2.0;
+      maxx = lon + width/2.0;
+    }
+
+    double miny = lat;
+    double maxy = lat;
+    if (lat + width/2.0 > 90.0) {
+      maxy = 90;
+      miny = maxy - width;
+    } else if (lat - width/2.0 < -90) {
+      miny = -90;
+      maxy = minx + width;
+    } else {
+      miny = lat - width/2.0;
+      maxy = lat + width/2.0;
+    }
+
+    return minx + "," + miny + "," + maxx + "," + maxy;
+  }
+
+  private static String getTimeExtent(FeatureService featureService, String fieldName) throws Exception {
+    JSONObject stats = featureService.getStates(fieldName);
+    String minTimestamp = stats.getString("min").replace("T", " ").replace("Z", "");
+    String maxTimestamp = stats.getString("max").replace("T", " ").replace("Z", "");
+    long min = simpleDateFormat.parse(minTimestamp).getTime();
+    long max = simpleDateFormat.parse(maxTimestamp).getTime();
+    double random = new Random().nextDouble() * (max - min);
+    long randomLong = (long) (random < 0 ? random * (-1) : random);
+    String mTimestamp = min + ","+ (min + randomLong);
+    return mTimestamp;
+  }
+
+  private static String getUniqueValuesForIN(FeatureService featureService, String fieldName, boolean isStringField) throws Exception {
+    Random random = new Random();
+
+    List<String> uniqueValues = featureService.getUniqueValues(fieldName);
+    if (uniqueValues.size() == 0) throw new Exception("No unique values found!");
+    if (uniqueValues.size() == 1) throw new Exception("Only have one value.");
+    String uniqueValue1 = uniqueValues.get(0);
+    String uniqueValue2 = uniqueValues.get(1);
+    int totalCount = uniqueValues.size();
+    if (totalCount > 2) {
+      int index = random.nextInt() % totalCount;
+      index = index < 0 ? (-1) * index : index;
+      uniqueValue1 = uniqueValues.get(index);
+
+      index = random.nextInt() % totalCount;
+      index = index < 0 ? (-1) * index : index;
+      while (uniqueValues.get(index).equals(uniqueValue1)) {
+        index = random.nextInt() % totalCount;
+        index = index < 0 ? (-1) * index : index;
+      }
+      uniqueValue2 = uniqueValues.get(index);
+    }
+
+    if (isStringField) {
+      uniqueValue1 = "'" + uniqueValue1.replaceAll("'", "''") + "'";
+      uniqueValue2 = "'" + uniqueValue2.replaceAll("'", "''") + "'";
+    }
+
+    String where = fieldName + " IN (" + uniqueValue1 + "," + uniqueValue2 + ")";
+    return where;
   }
 }

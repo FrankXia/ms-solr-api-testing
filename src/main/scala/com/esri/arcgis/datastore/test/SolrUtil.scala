@@ -2,7 +2,7 @@ package com.esri.arcgis.datastore.test
 
 import com.esri.core.geometry._
 import org.apache.commons.logging.LogFactory
-import org.apache.solr.client.solrj.SolrClient
+import org.apache.solr.client.solrj.{SolrClient, SolrQuery}
 import org.apache.solr.client.solrj.impl.HttpSolrClient
 import com.facebook.presto.sql.parser.SqlParser
 import com.facebook.presto.sql.tree._
@@ -158,5 +158,11 @@ object SolrUtil {
   def getSolrClient(hostName: String, port: Int, keyspace: String, tableName: String): SolrClient = {
     val baseUrl = "http://" + hostName + ":" + port + "/solr/" + keyspace + "." + tableName
     new HttpSolrClient(baseUrl)
+  }
+
+  def main(args: Array[String]): Unit = {
+    val solrQuery = new SolrQuery()
+    solrQuery.set("fq", "(orig:(\"N'Djamena International Airport\"))")
+    println(solrQuery.toString)
   }
 }

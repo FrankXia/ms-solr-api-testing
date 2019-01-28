@@ -9,7 +9,8 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.Random;
+import java.net.URLEncoder;
+import java.util.*;
 
 public class FeatureService {
 
@@ -19,6 +20,7 @@ public class FeatureService {
   private String host;
   private int port;
   private String serviceName;
+  private String keyspace = "esri_ds_data";
 
   // 36 parameters
   private String where = "";
@@ -63,6 +65,7 @@ public class FeatureService {
     this.host = host;
     this.port = port;
     this.serviceName = serviceName;
+    this.outFields = "*";
   }
 
   long getCount(String where) {
@@ -84,6 +87,14 @@ public class FeatureService {
     return totalCount;
   }
 
+  void getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(String where, String boundingBox, String timeExtent) {
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    this.geometry = boundingBox;
+    this.time = timeExtent;
+    getFeatures();
+  }
+
   void getFeaturesWithWhereClauseAndRandomOffset(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
@@ -100,6 +111,19 @@ public class FeatureService {
     getFeatures();
   }
 
+  void getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    this.time = timeString;
+    getFeatures();
+  }
+
+  void getFeaturesWithWhereClause(String where) {
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    getFeatures();
+  }
+
   private void getFeatures() {
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
@@ -109,6 +133,12 @@ public class FeatureService {
       if (obj.optJSONObject("error") == null) {
         boolean exceededTransferLimit = obj.getBoolean("exceededTransferLimit");
         JSONArray features = obj.getJSONArray("features");
+        if (features.length() > 0) {
+          // print a random feature
+          int index  = random.nextInt() % features.length();
+          index = index < 0 ? (-1) * index : index;
+          System.out.println(features.get(index));
+        }
         System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
       } else {
         System.out.print("Request failed -> " + response);
@@ -116,11 +146,76 @@ public class FeatureService {
     }
   }
 
+  JSONObject getStates(String fieldName) {
+    int solrPort = 8983;
+    HttpClient client = httpClient;
+    try {
+      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
+      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
+      System.out.println(url);
+
+      HttpGet request = new HttpGet(url);
+      HttpResponse response = client.execute(request);
+      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
+      BufferedReader rd = new BufferedReader(
+          new InputStreamReader(response.getEntity().getContent()));
+      StringBuilder result = new StringBuilder();
+      String line = "";
+      while ((line = rd.readLine()) != null) {
+        result.append(line);
+      }
+      String jsonString = result.toString();
+
+      JSONObject jsonObject = new JSONObject(jsonString);
+      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return null;
+  }
+
+  List<String> getUniqueValues(String fieldName) {
+    int solrPort = 8983;
+    HttpClient client = httpClient;
+    List<String> uniqueValues = new LinkedList<String>();
+    try {
+      int maxReturns = 100;
+      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
+      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
+      System.out.println(url);
+      System.out.println(url.substring(90));
+
+      HttpGet request = new HttpGet(url);
+      HttpResponse response = client.execute(request);
+      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
+      BufferedReader rd = new BufferedReader(
+          new InputStreamReader(response.getEntity().getContent()));
+      StringBuilder result = new StringBuilder();
+      String line = "";
+      while ((line = rd.readLine()) != null) {
+        result.append(line);
+      }
+      String jsonString = result.toString();
+
+      JSONObject jsonObject = new JSONObject(jsonString);
+      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
+
+      for (int i=0; i<buckets.length(); i++) {
+        JSONObject bucket = buckets.getJSONObject(i);
+        String key = bucket.get("val").toString();
+        uniqueValues.add(key);
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return uniqueValues;
+  }
+
   private String composeGetRequestQueryParameters() {
     StringBuilder request = new StringBuilder();
-    request.append("where=").append(where);
+    request.append("where=").append(URLEncoder.encode(where));
     request.append("&objectIds=").append(objectIds);
-    request.append("&time=").append(time);
+    request.append("&time=").append(URLEncoder.encode(time));
     request.append("&geometry=").append(geometry);
     request.append("&geometryType=").append(geometryType);
     request.append("&geohash=").append(geohash);
@@ -171,7 +266,7 @@ public class FeatureService {
     this.distance = "";
     this.units = "esriSRUnit_Foot";
     this.relationParam = "";
-    this.outFields = "";
+    this.outFields = "*";
     this.returnGeometry = true;
     this.maxAllowableOffset ="";
     this.geometryPrecision = "";
@@ -216,7 +311,7 @@ public class FeatureService {
       while ((line = rd.readLine()) != null) {
         result.append(line);
       }
-      System.out.println("Total request time: " + (System.currentTimeMillis() - start)  + " ms");
+      System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
       return result.toString();
     } catch (Exception ex) {
       ex.printStackTrace();
