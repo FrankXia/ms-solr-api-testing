@@ -13,32 +13,51 @@ public class FeatureServiceTester {
 
   public static void main(String[] args) {
 
+    testVariousRequestsWithoutStats(args);
+  }
+
+
+  private static void testVariousRequestsWithStats(String args[]) {
+
     if (args.length == 0) {
       System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <Option codes: 0 -> 8> ");
+      System.out.println("Code stands for: ");
+      System.out.println("0 -> get total counts for all services ");
+      System.out.println("1 -> all:  1=1, with stats on speed  limit=10,000");
+    } else {
+
+    }
+  }
+
+
+  private static void testVariousRequestsWithoutStats(String[] args) {
+
+    if (args.length <= 1) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <host> <Option codes: 0 -> 8> ");
       System.out.println("Code stands for: ");
       System.out.println("0 -> get total counts for all services ");
       System.out.println("1 -> all:  1=1, limit=10,000 ");
       System.out.println("2 -> attribute range:  speed < x and speed > y, limit=10,000 for all services ");
       System.out.println("3 -> attribute group:  flightId IN ('1234', '5678'), limit=10,000 for all services ");
-      System.out.println("4 -> spatial extent:  geometry INSIDE boundingbox, limit=10,000 for all services ");
-      System.out.println("5 -> not supported yet, spatial polygon:  geometry INSIDE stateboundary, limit=10,000 for all services ");
+      System.out.println("4 -> spatial extent:  geometry INSIDE bounding box, limit=10,000 for all services ");
+      System.out.println("5 -> not supported yet, spatial polygon:  geometry INSIDE state boundary, limit=10,000 for all services ");
       System.out.println("6 -> temporal extent:  time > t1 and time < t2, limit=10,000 for all services ");
-      System.out.println("7 -> spatiotemporal extent:  geometry INSIDE boundingbox AND time > t1 and time < t2, limit=10,000 for all services ");
-      System.out.println("8 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE boundingbox AND time > t1 and time < t2, limit=10,000 for all services ");
+      System.out.println("7 -> spatiotemporal extent:  geometry INSIDE bounding box AND time > t1 and time < t2, limit=10,000 for all services ");
+      System.out.println("8 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE bounding box AND time > t1 and time < t2, limit=10,000 for all services ");
 
       System.out.println("Samples: ");
       System.out.println("java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester 1,2,3");
     } else {
-
-      String hostName = "localhost";
+      
       int serverPort = 9000;
-      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m"};
+      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m"};
 
       String pattern = "yyyy-MM-dd HH:mm:ss";
       simpleDateFormat = new SimpleDateFormat(pattern);
       simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-      String codes = args[0];
+      String hostName = args[0];
+      String codes = args[1];
       if (codes.contains("0")) testTotalCountForAll(hostName, serverPort, tableNames);
       if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
       if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
