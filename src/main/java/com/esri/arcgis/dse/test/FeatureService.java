@@ -95,12 +95,16 @@ public class FeatureService {
     getFeatures();
   }
 
-  void getFeaturesWithWhereClauseAndRandomOffset(String where) {
+  void getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     // add random number of records skipped
-    int skip = random.nextInt(this.resultRecordCount / 2);
-    this.resultOffset = skip +"";
+    if (takeOffset) {
+      int skip = random.nextInt(this.resultRecordCount / 2);
+      this.resultOffset = skip + "";
+    } else {
+      this.resultOffset = "0";
+    }
     getFeatures();
   }
 

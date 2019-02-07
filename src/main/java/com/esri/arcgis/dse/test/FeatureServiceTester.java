@@ -48,9 +48,9 @@ public class FeatureServiceTester {
       System.out.println("Samples: ");
       System.out.println("java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester 1,2,3");
     } else {
-      
+
       int serverPort = 9000;
-      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m"};
+      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m", "faa30m"};
 
       String pattern = "yyyy-MM-dd HH:mm:ss";
       simpleDateFormat = new SimpleDateFormat(pattern);
@@ -62,11 +62,11 @@ public class FeatureServiceTester {
       if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
       if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
       if (codes.contains("3")) testGetFeaturesWithSQLIn(hostName, serverPort, tableNames);
-      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames, 10);
+      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames, 20);
       if (codes.contains("5")) System.out.println("To be implemented!");
 
       if (codes.contains("6")) testGetFeaturesWithTimeExtent(hostName, serverPort, tableNames);
-      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames, 15);
+      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames, 35);
       // if bounding box too small, the table/service may return 0 feature.
       if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames, 60);
     }
@@ -161,7 +161,8 @@ public class FeatureServiceTester {
     System.out.println("======== get features from each service with a random offset ========= ");
     for (String table: tableNames) {
       FeatureService featureService = new FeatureService(hostName, port, table);
-      featureService.getFeaturesWithWhereClauseAndRandomOffset("1=1");
+      boolean useOffset =  !table.contains("10k");
+      featureService.getFeaturesWithWhereClauseAndRandomOffset("1=1", useOffset);
     }
   }
   
@@ -179,8 +180,9 @@ public class FeatureServiceTester {
       JSONObject stats = featureService.getStates(fieldName);
       double min = stats.getDouble("min");
       double max = stats.getDouble("max");
-      double random = new Random().nextDouble() * (max - min);
-      random = random < 0 ? random * (-1) : random;
+//      double random = new Random().nextDouble() * (max - min);
+//      random = random < 0 ? random * (-1) : random;
+      double random = 0.5 * (max - min);
       String where = fieldName + " > " + min + " AND " + fieldName + " < " + (min + random);
       featureService.getFeaturesWithWhereClause(where);
     }
@@ -231,8 +233,9 @@ public class FeatureServiceTester {
     String maxTimestamp = stats.getString("max").replace("T", " ").replace("Z", "");
     long min = simpleDateFormat.parse(minTimestamp).getTime();
     long max = simpleDateFormat.parse(maxTimestamp).getTime();
-    double random = new Random().nextDouble() * (max - min);
-    long randomLong = (long) (random < 0 ? random * (-1) : random);
+//    double random = new Random().nextDouble() * (max - min);
+//    long randomLong = (long) (random < 0 ? random * (-1) : random);
+    long randomLong = (long) (0.5 * (max - min));
     String mTimestamp = min + ","+ (min + randomLong);
     return mTimestamp;
   }
