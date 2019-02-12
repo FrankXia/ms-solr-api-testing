@@ -71,6 +71,17 @@ public class FeatureService {
   long getCount(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
+    return getCount();
+  }
+
+  long getCount(String where, String boundingBox) {
+    resetParameters2InitialValues();
+    this.geometry = boundingBox;
+    this.where = where == null? "" : where.trim();
+    return getCount();
+  }
+
+  private long getCount() {
     this.returnCountOnly = true;
     long totalCount = 0L;
     String queryParameters = composeGetRequestQueryParameters();
@@ -128,6 +139,15 @@ public class FeatureService {
     getFeatures();
   }
 
+  void doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    this.groupByFieldsForStatistics = groupByFdName;
+    this.outStatistics = outStats;
+    if (boundingBox != null) this.geometry = boundingBox;
+    getFeatures();
+  }
+
   private void getFeatures() {
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
@@ -135,7 +155,7 @@ public class FeatureService {
       //System.out.println(response);
       JSONObject obj = new JSONObject(response);
       if (obj.optJSONObject("error") == null) {
-        boolean exceededTransferLimit = obj.getBoolean("exceededTransferLimit");
+        boolean exceededTransferLimit = obj.optBoolean("exceededTransferLimit");
         JSONArray features = obj.getJSONArray("features");
         if (features.length() > 0) {
           // print a random feature
@@ -149,6 +169,7 @@ public class FeatureService {
       }
     }
   }
+
 
   JSONObject getStates(String fieldName) {
     int solrPort = 8983;
@@ -240,7 +261,7 @@ public class FeatureService {
     request.append("&returnExtentOnly=").append(returnExtentOnly);
     request.append("&orderByFields=").append(orderByFields);
     request.append("&groupByFieldsForStatistics=").append(groupByFieldsForStatistics);
-    request.append("&outStatistics=").append(outStatistics);
+    request.append("&outStatistics=").append(URLEncoder.encode(outStatistics));
     request.append("&returnZ=").append(returnZ);
     request.append("&returnM=").append(returnM);
     request.append("&multipatchOption=").append(multipatchOption);

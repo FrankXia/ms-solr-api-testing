@@ -13,18 +13,37 @@ public class FeatureServiceTester {
 
   public static void main(String[] args) {
 
-    testVariousRequestsWithoutStats(args);
+    int numParameters = args.length;
+    if (numParameters == 3) {
+      testVariousRequestsWithoutStats(args);
+    } else if (numParameters >= 4) {
+      testVariousRequestsWithStats(args);
+    } else {
+      testVariousRequestsWithStats(new String[0]);
+      System.out.println(" OR ");
+      testVariousRequestsWithoutStats(new String[0]);
+    }
   }
 
 
-  private static void testVariousRequestsWithStats(String args[]) {
+  private static void testVariousRequestsWithStats(String[] args) {
 
-    if (args.length == 0) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <Option codes: 0 -> 8> ");
-      System.out.println("Code stands for: ");
-      System.out.println("0 -> get total counts for all services ");
-      System.out.println("1 -> all:  1=1, with stats on speed  limit=10,000");
+    if (args.length < 4) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <Host name> <Service name> <Group By field name> <Out statistics> {<Bounding Box>}");
+      System.out.println("Sample:");
+      System.out.println("   java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester localhost faa30m dest \"[{\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}]\"");
     } else {
+      int serverPort = 9000;
+      String host = args[0];
+      String serviceName = args[1];
+      String groupbyFdName = args[2];
+      String outStats = args[3];
+      System.out.println(outStats);
+
+      String boundingBox = (args.length == 5)? args[4] : null;
+
+      FeatureService featureService = new FeatureService(host, serverPort, serviceName);
+      featureService.doGroupByStats("1=1", groupbyFdName, outStats, boundingBox);
 
     }
   }
@@ -32,8 +51,8 @@ public class FeatureServiceTester {
 
   private static void testVariousRequestsWithoutStats(String[] args) {
 
-    if (args.length <= 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <host> <Option codes: 0 -> 8> ");
+    if (args.length < 3) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester <Host name> <Service name> <Option codes: 0 -> 8> ");
       System.out.println("Code stands for: ");
       System.out.println("0 -> get total counts for all services ");
       System.out.println("1 -> all:  1=1, limit=10,000 ");
@@ -46,18 +65,18 @@ public class FeatureServiceTester {
       System.out.println("8 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE bounding box AND time > t1 and time < t2, limit=10,000 for all services ");
 
       System.out.println("Samples: ");
-      System.out.println("java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester 1,2,3");
+      System.out.println("java -cp  ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.FeatureServiceTester localhost faa10m 1,2,3");
     } else {
 
       int serverPort = 9000;
-      String[] tableNames = new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m", "faa30m"};
+      String[] tableNames = new String[]{args[1]}; // new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m", "faa30m", "faa300m"};
 
       String pattern = "yyyy-MM-dd HH:mm:ss";
       simpleDateFormat = new SimpleDateFormat(pattern);
       simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
       String hostName = args[0];
-      String codes = args[1];
+      String codes = args[2];
       if (codes.contains("0")) testTotalCountForAll(hostName, serverPort, tableNames);
       if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
       if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
