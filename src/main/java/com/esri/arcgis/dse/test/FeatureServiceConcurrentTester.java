@@ -14,17 +14,18 @@ public class FeatureServiceConcurrentTester {
   private static Random random = new Random();
 
   public static void main(String[] args) {
-    if (args.length == 5) {
-      String serviceName = args[0];
-      int numThreads = Integer.parseInt(args[1]);
-      int numCalls = Integer.parseInt(args[2]);
-      String groupByFieldName = args[3];
-      String outStatisitcs = args[4];
-      concurrentTesting(serviceName, numThreads, numCalls, groupByFieldName, outStatisitcs);
+    if (args.length == 6) {
+      String host = args[0];
+      String serviceName = args[1];
+      int numThreads = Integer.parseInt(args[2]);
+      int numCalls = Integer.parseInt(args[3]);
+      String groupByFieldName = args[4];
+      String outStatisitcs = args[5];
+      concurrentTesting(host, serviceName, numThreads, numCalls, groupByFieldName, outStatisitcs);
     } else {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics>");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics>");
       System.out.println("Sample:");
-      System.out.println("   java -cp  ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester faa30m 4 8 dest  \"[" +
+      System.out.println("   java -cp  ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester localhost faa30m 4 8 dest  \"[" +
           " {\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"min\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"min_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"max\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"max_speed\\\"} " +
@@ -53,10 +54,9 @@ public class FeatureServiceConcurrentTester {
     return minx +"," + miny + "," + (minx+width) + "," + (miny + height);
   }
 
-  private static void concurrentTesting(String serviceName, int numbThreads, int numbConcurrentCalls, String groupByFieldName, String outStatistics) {
+  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String groupByFieldName, String outStatistics) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
 
-    String host = "localhost";
     int port = 9000;
 
     List<Callable<Long>> callables = new LinkedList<>();
