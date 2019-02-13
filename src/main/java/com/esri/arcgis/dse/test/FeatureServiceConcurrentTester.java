@@ -98,10 +98,10 @@ public class FeatureServiceConcurrentTester {
       for (int i=0; i<times.size(); i++) {
         timeTotal += times.get(i);
         featureTotal += features.get(i);
-        if (times.get(i) > minTime) minTime = times.get(i);
-        if (times.get(i) < maxTime) maxTime = times.get(i);
-        if (features.get(i) > minFeatures) minFeatures = features.get(i);
-        if (features.get(i) < maxFeatures) maxFeatures = features.get(i);
+        if (times.get(i) < minTime) minTime = times.get(i);
+        if (times.get(i) > maxTime) maxTime = times.get(i);
+        if (features.get(i) < minFeatures) minFeatures = features.get(i);
+        if (features.get(i) > maxFeatures) maxFeatures = features.get(i);
 
         squaredTimes += times.get(i) * times.get(i);
         squaredFeatures += features.get(i) * features.get(i);
@@ -111,8 +111,8 @@ public class FeatureServiceConcurrentTester {
 
       double avgTime = timeTotal / times.size();
       double avgFeatures = featureTotal / features.size();
-      double stdDevTimes = (squaredTimes - times.size() * avgTime * avgTime) / (times.size() - 1);
-      double stdDevFeatures = (squaredFeatures - features.size() * avgFeatures * avgFeatures) / (features.size() - 1);
+      double stdDevTimes = Math.sqrt( (squaredTimes - times.size() * avgTime * avgTime) / (times.size() - 1) );
+      double stdDevFeatures = Math.sqrt( (squaredFeatures - features.size() * avgFeatures * avgFeatures) / (features.size() - 1) );
       System.out.println( "Time -> min, max, average and standard deviation over " + times.size() +  " requests: " +  minTime + " " + maxTime + " " + avgTime + " " + stdDevTimes);
       System.out.println( "Features -> min, max, average and standard deviation over " + features.size() +  " requests: " +  minFeatures + " " + maxFeatures + " " + avgFeatures + " " + stdDevFeatures);
     }catch (Exception ex) {
