@@ -85,17 +85,36 @@ public class FeatureServiceConcurrentTester {
         features.add(tuple.returnedFeatures);
       });
 
-      long timeTotal = 0;
-      long featureTotal = 0;
+      double timeTotal = 0;
+      double featureTotal = 0;
+      long minTime = times.get(0);
+      long maxTime = times.get(0);
+      long minFeatures = features.get(0);
+      long maxFeatures = features.get(0);
+
+      double squaredTimes = 0.0;
+      double squaredFeatures = 0.0;
+
       for (int i=0; i<times.size(); i++) {
         timeTotal += times.get(i);
         featureTotal += features.get(i);
+        if (times.get(i) > minTime) minTime = times.get(i);
+        if (times.get(i) < maxTime) maxTime = times.get(i);
+        if (features.get(i) > minFeatures) minFeatures = features.get(i);
+        if (features.get(i) < maxFeatures) maxFeatures = features.get(i);
+
+        squaredTimes += times.get(i) * times.get(i);
+        squaredFeatures += features.get(i) * features.get(i);
       }
 //      long totalFinal = results.reduce(0L, (total, i) -> total + i);
 //      System.out.println( (double)totalFinal / (double)callables.size());
 
-      System.out.println( "Average time and features over " + features.size() +  " requests: " +  (double)timeTotal / (double)times.size() + " " + (double)featureTotal / (double)features.size());
-
+      double avgTime = timeTotal / times.size();
+      double avgFeatures = featureTotal / features.size();
+      double stdDevTimes = (squaredTimes - times.size() * avgTime * avgTime) / (times.size() - 1);
+      double stdDevFeatures = (squaredFeatures - features.size() * avgFeatures * avgFeatures) / (features.size() - 1);
+      System.out.println( "Time -> min, max, average and standard deviation over " + times.size() +  " requests: " +  minTime + " " + maxTime + " " + avgTime + " " + stdDevTimes);
+      System.out.println( "Features -> min, max, average and standard deviation over " + features.size() +  " requests: " +  minFeatures + " " + maxFeatures + " " + avgFeatures + " " + stdDevFeatures);
     }catch (Exception ex) {
       ex.printStackTrace();
     }
