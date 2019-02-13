@@ -139,7 +139,7 @@ public class FeatureService {
     getFeatures();
   }
 
-  long doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
+  Tuple doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.groupByFieldsForStatistics = groupByFdName;
@@ -148,10 +148,11 @@ public class FeatureService {
     return getFeatures();
   }
 
-  private long getFeatures() {
+  private Tuple getFeatures() {
     long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
+    long numFeatures = 0;
     if (response != null) {
       //System.out.println(response);
       JSONObject obj = new JSONObject(response);
@@ -164,12 +165,13 @@ public class FeatureService {
           index = index < 0 ? (-1) * index : index;
           System.out.println(features.get(index));
         }
+        numFeatures = features.length();
         System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
       } else {
         System.out.print("Request failed -> " + response);
       }
     }
-    return System.currentTimeMillis() - start;
+    return new Tuple(System.currentTimeMillis() - start, numFeatures);
   }
 
 

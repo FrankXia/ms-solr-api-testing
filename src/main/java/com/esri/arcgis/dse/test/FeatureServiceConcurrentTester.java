@@ -34,8 +34,8 @@ public class FeatureServiceConcurrentTester {
     }
   }
 
-  private static Callable<Long> createTask(String host, int port, String serviceName, String groupByFieldName, String outStatisitcs, String boundingBox) {
-    Callable<Long> task = () -> {
+  private static Callable<Tuple> createTask(String host, int port, String serviceName, String groupByFieldName, String outStatisitcs, String boundingBox) {
+    Callable<Tuple> task = () -> {
       FeatureService featureService = new FeatureService(host, port, serviceName);
       return featureService.doGroupByStats("1=1", groupByFieldName, outStatisitcs, boundingBox);
     };
@@ -59,7 +59,7 @@ public class FeatureServiceConcurrentTester {
 
     int port = 9000;
 
-    List<Callable<Long>> callables = new LinkedList<>();
+    List<Callable<Tuple>> callables = new LinkedList<>();
 
     try {
       for (int index=0; index < numbConcurrentCalls; index++) {
@@ -67,7 +67,7 @@ public class FeatureServiceConcurrentTester {
         callables.add(createTask(host, port, serviceName, groupByFieldName, outStatistics, boundingBox));
       }
 
-      Stream<Long> results =
+      Stream<Tuple> results =
           executor.invokeAll(callables)
               .stream()
               .map(future -> {
@@ -77,8 +77,24 @@ public class FeatureServiceConcurrentTester {
                   throw new IllegalStateException(e);
                 }
               });
-      long totalFinal = results.reduce(0L, (total, i) -> total + i);
-      System.out.println( (double)totalFinal / (double)callables.size());
+
+      final List<Long> times = new LinkedList<>();
+      final List<Long> features = new LinkedList<>();
+      results.forEach( tuple -> {
+        times.add(tuple.requestTime);
+        features.add(tuple.returnedFeatures);
+      });
+
+      long timeTotal = 0;
+      long featureTotal = 0;
+      for (int i=0; i<times.size(); i++) {
+        timeTotal += times.get(i);
+        featureTotal += features.get(i);
+      }
+//      long totalFinal = results.reduce(0L, (total, i) -> total + i);
+//      System.out.println( (double)totalFinal / (double)callables.size());
+
+      System.out.println( "Average time and features over " + features.size() +  " requests: " +  (double)timeTotal / (double)times.size() + " " + (double)featureTotal / (double)features.size());
 
     }catch (Exception ex) {
       ex.printStackTrace();
