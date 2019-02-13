@@ -35,7 +35,7 @@ public class MapService {
     this.serviceName = serviceName;
   }
 
-  public void exportMap(String bbox, int bboxSR) {
+  public long exportMap(String bbox, int bboxSR) {
     this.bbox = bbox;
     this.bboxSR = bboxSR;
 
@@ -50,11 +50,12 @@ public class MapService {
     queryParameters.append("&size=").append(URLEncoder.encode(sizeString));
     queryParameters.append("&f=").append(f);
 
-    String response = executeMapExportRequest(queryParameters.toString());
-    if (response==null) {
+    long response = executeMapExportRequest(queryParameters.toString());
+    if (response == -1) {
       System.out.println("?????? failed to export image!");
     }
     System.out.println("Export image succeeded!");
+    return response;
   }
 
   private String createDynamicLayers(int featureLimit, String layerName) {
@@ -62,13 +63,14 @@ public class MapService {
     return template;
   }
 
-  private String executeMapExportRequest(String queryParameters) {
+  private long executeMapExportRequest(String queryParameters) {
     HttpClient client = httpClient;
+    long start = System.currentTimeMillis();
     try {
       String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + queryParameters;
       System.out.println(url);
 
-      long start = System.currentTimeMillis();
+
       HttpGet request = new HttpGet(url);
       HttpResponse response = client.execute(request);
       System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
@@ -81,11 +83,11 @@ public class MapService {
       }
 
       System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
-      return result.toString();
     } catch (Exception ex) {
       ex.printStackTrace();
+      return -1;
     }
-    return null;
+    return (System.currentTimeMillis() - start);
   }
 
   long getCount(String where, String boundingBox) {

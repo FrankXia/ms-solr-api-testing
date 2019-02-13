@@ -139,16 +139,17 @@ public class FeatureService {
     getFeatures();
   }
 
-  void doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
+  long doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.groupByFieldsForStatistics = groupByFdName;
     this.outStatistics = outStats;
     if (boundingBox != null) this.geometry = boundingBox;
-    getFeatures();
+    return getFeatures();
   }
 
-  private void getFeatures() {
+  private long getFeatures() {
+    long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
     if (response != null) {
@@ -168,6 +169,7 @@ public class FeatureService {
         System.out.print("Request failed -> " + response);
       }
     }
+    return System.currentTimeMillis() - start;
   }
 
 

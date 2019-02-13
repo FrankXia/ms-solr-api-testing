@@ -1,40 +1,28 @@
 package com.esri.arcgis.dse.test;
 
-import java.util.Random;
-
 public class MapServiceTester {
 
   public static void main(String[] args) {
-    //getBoundingBoxWith10kFeatures(args);
-    //testAll();
     testOneService(args);
+    //testAll();
   }
 
   private static void testOneService(String[] args) {
     if (args == null || args.length < 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.MapServiceTester <Service Name> {<optional bounding box>}");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceTester <Service Name> {<optional bounding box>}");
       return;
     }
     String serviceName = args[0];
     String host = "localhost";
     int port = 9000;
     int limit = 10000;
-    String boundingBox = args.length == 2 ? args [1] : getBbox(host, port, serviceName, limit);
+    String boundingBox = args.length == 2 ? args [1] : GenerateBoundingBox.getBbox(host, port, serviceName, limit, 1).split("[|]")[0];
     testExportMap(host, port, serviceName, boundingBox);
   }
 
-  private static void getBoundingBoxWith10kFeatures(String[] args) {
-    if (args == null || args.length < 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-0.10.15.jar com.esri.arcgis.dse.test.MapServiceTester <Service Name> ");
-      return;
-    }
-
-    int limit = 10000;
-    String host = "localhost";
-    int port = 9000;
-    String name = args[0];
-
-    getBbox(host, port, name, limit);
+  private static void testExportMap(String host, int port, String serviceName, String boundingBox) {
+    MapService mapService = new MapService(host, port, serviceName);
+    mapService.exportMap(boundingBox, 4326);
   }
 
   private static void testAll() {
@@ -55,7 +43,7 @@ public class MapServiceTester {
     long start = System.currentTimeMillis();
     int limit = 10000;
     for (int i=1; i<serviceNames.length; i++) {
-      bboxes[i] = getBbox(host, port, serviceNames[i], limit);
+      bboxes[i] = GenerateBoundingBox.getBbox(host, port, serviceNames[i], limit, 1).split("[|]")[0];
     }
     System.out.println("Time to get bounding boxes => " + (System.currentTimeMillis() - start) + " ms");
 
@@ -64,54 +52,5 @@ public class MapServiceTester {
       MapService mapService = new MapService(host, port, name);
       mapService.exportMap(bboxes[index], 4326);
     }
-  }
-  private static String getBbox(String host, int port, String serviceName, int limit) {
-    double minx = 0;
-    double maxx = 180;
-    double miny = 0;
-    double maxy = 90;
-
-    Random random = new Random();
-    minx = random.nextDouble() * 180.0;
-    minx = minx < 0 ? minx : minx * -1;
-    miny = random.nextDouble() * 90.0;
-    miny = miny < 0 ? miny: miny * -1;
-
-    double width = maxx - minx;
-    double height = maxy - miny;
-
-    String bbox = minx +"," + miny + "," + maxx + "," + maxy;
-    MapService mapService = new MapService(host, port, serviceName);
-    long numFeatures = mapService.getCount("1=1", bbox);
-    long delta = limit - numFeatures;
-
-    int loopCount = 0;
-    while (Math.abs(delta) > 100 || delta < 0) {
-      System.out.println(numFeatures + " " + delta);
-      double percent  = (double)delta / (double)limit;
-      if (Math.abs(percent) > 1) {
-        int sign = percent > 0 ? 1: -1;
-        width = width + width / 2 * sign;
-        height = height + height / 2 * sign;
-      } else {
-        if (loopCount % 2 == 0)
-          width = width + width * percent;
-        else
-          height = height + height * percent;
-      }
-      loopCount++;
-      maxx = minx + width;
-      maxy = miny + height;
-      bbox = minx +"," + miny + "," + maxx + "," + maxy;
-      numFeatures = mapService.getCount("1=1", bbox);
-      delta = limit - numFeatures;
-    }
-    System.out.println("---------------------------------> " + numFeatures);
-    return bbox;
-  }
-
-  private static void testExportMap(String host, int port, String serviceName, String boundingBox) {
-    MapService mapService = new MapService(host, port, serviceName);
-    mapService.exportMap(boundingBox, 4326);
   }
 }
