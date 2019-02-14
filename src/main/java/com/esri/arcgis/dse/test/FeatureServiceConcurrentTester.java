@@ -15,16 +15,25 @@ public class FeatureServiceConcurrentTester {
   private static Random random = new Random();
 
   public static void main(String[] args) {
-    if (args.length == 6) {
+    double width = 180.0;
+    double height = 90.0;
+
+    if (args.length >= 6) {
       String host = args[0];
       String serviceName = args[1];
       int numThreads = Integer.parseInt(args[2]);
       int numCalls = Integer.parseInt(args[3]);
       String groupByFieldName = args[4];
       String outStatisitcs = args[5];
-      concurrentTesting(host, serviceName, numThreads, numCalls, groupByFieldName, outStatisitcs);
+
+      if (args.length == 8) {
+        width = Double.parseDouble(args[6]);
+        height = Double.parseDouble(args[7]);
+      }
+
+      concurrentTesting(host, serviceName, numThreads, numCalls, groupByFieldName, outStatisitcs, width, height);
     } else {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics>");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics> {<bounding box width (180)> <bounding box height (90)}");
       System.out.println("Sample:");
       System.out.println("   java -cp  ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester localhost faa30m 4 8 dest  \"[" +
           " {\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
@@ -43,10 +52,7 @@ public class FeatureServiceConcurrentTester {
     return task;
   }
 
-  private static String generateRandomBoundingBox()  {
-    double width = 180.0;
-    double height = 90.0;
-
+  private static String generateRandomBoundingBox(double width, double height)  {
     double minx = random.nextDouble() * 180.0;
     minx = minx <= 0.0? minx : (-1) * minx;
     double miny = random.nextDouble() * 90.0;
@@ -55,7 +61,7 @@ public class FeatureServiceConcurrentTester {
     return minx +"," + miny + "," + (minx+width) + "," + (miny + height);
   }
 
-  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String groupByFieldName, String outStatistics) {
+  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String groupByFieldName, String outStatistics, double width, double height) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
 
     int port = 9000;
@@ -64,7 +70,7 @@ public class FeatureServiceConcurrentTester {
 
     try {
       for (int index=0; index < numbConcurrentCalls; index++) {
-        String boundingBox = generateRandomBoundingBox();
+        String boundingBox = generateRandomBoundingBox(width, height);
         callables.add(createTask(host, port, serviceName, groupByFieldName, outStatistics, boundingBox));
       }
 
