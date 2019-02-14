@@ -1,5 +1,6 @@
 package com.esri.arcgis.dse.test;
 
+import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -58,7 +59,7 @@ public class FeatureServiceConcurrentTester {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
 
     int port = 9000;
-
+    DecimalFormat df = new DecimalFormat("#.#");
     List<Callable<Tuple>> callables = new LinkedList<>();
 
     try {
@@ -113,8 +114,8 @@ public class FeatureServiceConcurrentTester {
       double avgFeatures = featureTotal / features.size();
       double stdDevTimes = Math.sqrt( (squaredTimes - times.size() * avgTime * avgTime) / (times.size() - 1) );
       double stdDevFeatures = Math.sqrt( (squaredFeatures - features.size() * avgFeatures * avgFeatures) / (features.size() - 1) );
-      System.out.println( "Time -> average, min, max, and standard deviation over " + times.size() +  " requests: " +  avgTime + " " + minTime + " " + maxTime + " " + stdDevTimes);
-      System.out.println( "Features -> average, min, max, and standard deviation over " + features.size() +  " requests: " +  avgFeatures + " " + minFeatures + " " + maxFeatures + " " + stdDevFeatures);
+      System.out.println( "Time -> average, min, max, and standard deviation over " + times.size() +  " requests: | " +  df.format(avgTime) + " | " + df.format(minTime) + " | " + df.format(maxTime)  + " | " + df.format(stdDevTimes) + " | ");
+      System.out.println( "Features -> average, min, max, and standard deviation over " + features.size() +  " requests: | " +  df.format(avgFeatures) + " | " + df.format(minFeatures)  + " | " + df.format(maxFeatures) + " | " + df.format(stdDevFeatures) + " | ");
     }catch (Exception ex) {
       ex.printStackTrace();
     }

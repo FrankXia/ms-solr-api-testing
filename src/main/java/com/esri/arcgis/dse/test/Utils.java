@@ -3,6 +3,7 @@ package com.esri.arcgis.dse.test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,7 +33,7 @@ public class Utils {
             String[] splits = line.split(" ");
             if (splits.length == 2) {
               data.add(splits[0]);
-              System.out.println(splits[0]);
+              //System.out.println(splits[0]);
             }
           }
           line = reader.readLine();
@@ -52,6 +53,7 @@ public class Utils {
     double sum = 0;
     double min = Double.MAX_VALUE;
     double max = Double.MIN_VALUE;
+    DecimalFormat df = new DecimalFormat("#.#");
 
     double squaredValue = 0.0;
     for (int i=0; i<data.length; i++) {
@@ -66,6 +68,6 @@ public class Utils {
     double std_dev = Math.sqrt( (squaredValue - data.length * avg * avg) / (data.length - 1) );
 
     System.out.println("Total data points: " + data.length);
-    System.out.println("Average, min, max and std_dev: " + avg +  " " + min + " " +max + " " + std_dev);
+    System.out.println("Average, min, max and std_dev: | " + df.format(avg) +  " | " + df.format(min) + " | " + df.format(max) + " | " + df.format(std_dev) + " |");
   }
 }
