@@ -12,7 +12,7 @@ public class GenerateBoundingBox {
 
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox <Host Name> <Service Name> <Output File>");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox <Host Name> <Service Name> <Output File> {# of bounding boxes}");
       return;
     }
 
@@ -23,11 +23,14 @@ public class GenerateBoundingBox {
     String name = args[1];
     String fileName = "./" + args[2];
 
+    int numBBoxes = 100;
+    if (args.length > 3) numBBoxes = Integer.parseInt(args[3]);
+
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
       int validCount = 0;
-      while (validCount < 100) {
+      while (validCount < numBBoxes) {
         String boundingBox = getBbox(host, port, name, limit, validCount);
         writer.write(boundingBox);
         writer. newLine();
