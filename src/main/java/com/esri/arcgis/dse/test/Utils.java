@@ -63,7 +63,7 @@ public class Utils {
     DecimalFormat df = new DecimalFormat("#.#");
 
     double squaredValue = 0.0;
-    for (int i=(data.length - numberRequest); i< numberRequest; i++) {
+    for (int i=(data.length - numberRequest); i < data.length; i++) {
       double stat = data[i];
       sum += stat;
       if (stat < min) min = stat;
