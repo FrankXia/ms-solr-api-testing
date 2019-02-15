@@ -71,10 +71,10 @@ public class Utils {
       squaredValue += stat * stat;
     }
 
-    double avg = sum / data.length;
-    double std_dev = Math.sqrt( (squaredValue - data.length * avg * avg) / (data.length - 1) );
+    double avg = sum / numberRequest;
+    double std_dev = Math.sqrt( (squaredValue - numberRequest * avg * avg) / (numberRequest - 1) );
 
-    System.out.println("Total data points: " + data.length);
+    System.out.println("Total data points: " + numberRequest);
     System.out.println("Average, min, max and std_dev: | " + df.format(avg) +  " | " + df.format(min) + " | " + df.format(max) + " | " + df.format(std_dev) + " |");
   }
 }
