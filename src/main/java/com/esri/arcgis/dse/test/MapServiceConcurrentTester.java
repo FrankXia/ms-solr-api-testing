@@ -2,6 +2,7 @@ package com.esri.arcgis.dse.test;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -36,8 +37,9 @@ public class MapServiceConcurrentTester {
 
   private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String bboxFile) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
-    int port = 9000;
 
+    int port = 9000;
+    DecimalFormat df = new DecimalFormat("#.#");
     List<Callable<Long>> callables = new LinkedList<>();
 
     try {
@@ -61,8 +63,31 @@ public class MapServiceConcurrentTester {
                   throw new IllegalStateException(e);
                 }
               });
-      long totalFinal = results.reduce(0L, (total, i) -> total + i);
-      System.out.println( (double)totalFinal / (double)callables.size());
+
+      final List<Long> times = new LinkedList<>();
+      results.forEach( t -> {
+        times.add(t);
+      });
+
+      double timeTotal = 0;
+      double featureTotal = 0;
+      long minTime = times.get(0);
+      long maxTime = times.get(0);
+
+      double squaredTimes = 0.0;
+      double squaredFeatures = 0.0;
+
+      for (int i=0; i<times.size(); i++) {
+        timeTotal += times.get(i);
+        if (times.get(i) < minTime) minTime = times.get(i);
+        if (times.get(i) > maxTime) maxTime = times.get(i);
+        squaredTimes += times.get(i) * times.get(i);
+      }
+
+      double avgTime = timeTotal / times.size();
+      double stdDevTimes = Math.sqrt( (squaredTimes - times.size() * avgTime * avgTime) / (times.size() - 1) );
+      System.out.println( "Time -> average, min, max, and standard deviation over " + times.size() +  " requests: | " +  df.format(avgTime) + " | " + df.format(minTime) + " | " + df.format(maxTime)  + " | " + df.format(stdDevTimes) + " | ");
+
 
     }catch (Exception ex) {
       ex.printStackTrace();
