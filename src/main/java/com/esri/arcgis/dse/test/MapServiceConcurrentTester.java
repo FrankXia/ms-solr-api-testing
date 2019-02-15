@@ -70,12 +70,9 @@ public class MapServiceConcurrentTester {
       });
 
       double timeTotal = 0;
-      double featureTotal = 0;
       long minTime = times.get(0);
       long maxTime = times.get(0);
-
       double squaredTimes = 0.0;
-      double squaredFeatures = 0.0;
 
       for (int i=0; i<times.size(); i++) {
         timeTotal += times.get(i);
