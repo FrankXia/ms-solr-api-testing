@@ -13,14 +13,16 @@ import java.util.stream.Stream;
 public class MapServiceConcurrentTester {
 
   public static void main(String[] args) {
-    if (args.length == 4) {
-      String serviceName = args[0];
-      int numThreads = Integer.parseInt(args[1]);
-      int numCalls = Integer.parseInt(args[2]);
-      String fileName = args[3];
-      concurrentTesting(serviceName, numThreads, numCalls, fileName);
+    if (args.length == 5) {
+      String hostName = args[0];
+      String serviceName = args[1];
+      int numThreads = Integer.parseInt(args[2]);
+      int numCalls = Integer.parseInt(args[3]);
+      String fileName = args[4];
+      concurrentTesting(hostName, serviceName, numThreads, numCalls, fileName);
     } else {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceConcurrentTester <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Path to bounding box file>");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceConcurrentTester " +
+          "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Path to bounding box file>");
     }
   }
 
@@ -32,10 +34,8 @@ public class MapServiceConcurrentTester {
     return task;
   }
 
-  private static void concurrentTesting(String serviceName, int numbThreads, int numbConcurrentCalls, String bboxFile) {
+  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String bboxFile) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
-
-    String host = "localhost";
     int port = 9000;
 
     List<Callable<Long>> callables = new LinkedList<>();
