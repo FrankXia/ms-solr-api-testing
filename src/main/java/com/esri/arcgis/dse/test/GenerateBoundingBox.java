@@ -11,17 +11,17 @@ public class GenerateBoundingBox {
   }
 
   private static void getBoundingBoxWith10kFeatures(String[] args) {
-    if (args == null || args.length < 2) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox <Service Name> <Output File>");
+    if (args == null || args.length < 3) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox <Host Name> <Service Name> <Output File>");
       return;
     }
 
-    int limit = 10000;
-    String host = "localhost";
     int port = 9000;
-    String name = args[0];
+    int limit = 10000;
 
-    String fileName = "./" + args[1];
+    String host = args[0];
+    String name = args[1];
+    String fileName = "./" + args[2];
 
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
