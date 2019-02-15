@@ -14,16 +14,17 @@ import java.util.stream.Stream;
 public class MapServiceConcurrentTester {
 
   public static void main(String[] args) {
-    if (args.length == 5) {
+    if (args.length == 6) {
       String hostName = args[0];
       String serviceName = args[1];
       int numThreads = Integer.parseInt(args[2]);
       int numCalls = Integer.parseInt(args[3]);
       String fileName = args[4];
-      concurrentTesting(hostName, serviceName, numThreads, numCalls, fileName);
+      int lines2Skip = Integer.parseInt(args[5]);
+      concurrentTesting(hostName, serviceName, numThreads, numCalls, fileName, lines2Skip);
     } else {
       System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceConcurrentTester " +
-          "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Path to bounding box file>");
+          "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Path to bounding box file> <Number of lines to skip>");
     }
   }
 
@@ -35,7 +36,7 @@ public class MapServiceConcurrentTester {
     return task;
   }
 
-  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String bboxFile) {
+  private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String bboxFile, int lines2Skip) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
 
     int port = 9000;
@@ -45,6 +46,12 @@ public class MapServiceConcurrentTester {
     try {
       BufferedReader reader = new BufferedReader(new FileReader(bboxFile));
       String line = reader.readLine();
+
+      while (line != null && lines2Skip > 0) {
+        line = reader.readLine();
+        lines2Skip--;
+      }
+
       int lineRead = 0;
       while (line != null && lineRead < numbConcurrentCalls) {
         String boundingBox = line.split("[|]")[0];
