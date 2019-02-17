@@ -12,7 +12,8 @@ public class GenerateBoundingBox {
 
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox <Host Name> <Service Name> <Output File> {# of bounding boxes}");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox " +
+          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 100> <width: 180> <height: 90>}");
       return;
     }
 
@@ -24,14 +25,18 @@ public class GenerateBoundingBox {
     String fileName = "./" + args[2];
 
     int numBBoxes = 100;
+    double width = 180;
+    double height = 90;
     if (args.length > 3) numBBoxes = Integer.parseInt(args[3]);
+    if (args.length > 4) width = Double.parseDouble(args[4]);
+    if (args.length > 5) height = Double.parseDouble(args[5]);
 
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
       int validCount = 0;
       while (validCount < numBBoxes) {
-        String boundingBox = getBbox(host, port, name, limit, validCount);
+        String boundingBox = getBbox(host, port, name, limit, width, height, validCount);
         writer.write(boundingBox);
         writer. newLine();
         validCount++;
@@ -43,7 +48,7 @@ public class GenerateBoundingBox {
     }
   }
 
-  static String getBbox(String host, int port, String serviceName, int limit, int count) {
+  static String getBbox(String host, int port, String serviceName, int limit, double initWidth, double initHeight, int count) {
     double minx = 0;
     double maxx = 180;
     double miny = 0;
@@ -58,8 +63,8 @@ public class GenerateBoundingBox {
       miny = random.nextDouble() * 90.0;
       miny = miny < 0 ? miny : miny * -1;
 
-      maxx = 180;
-      maxy = 90;
+      maxx = initWidth;
+      maxy = initHeight;
 
       double width = maxx - minx;
       double height = maxy - miny;
@@ -76,9 +81,9 @@ public class GenerateBoundingBox {
         double percent = (double) delta / (double) limit;
         System.out.println("# of features: " + numFeatures + ", delta: " + delta + ", loop count: " + loopCount + ", percentage: " + percent);
         if (Math.abs(percent) >= 1) {
-          int sign = percent > 0 ? -1 : 1;
-          width = width + width / 2 * sign;
-          height = height + height / 2 * sign;
+          percent = percent > 0 ? 1/2.0 : -1/2.0;
+          width = width + width * percent;
+          height = height + height * percent;
         } else {
           if (loopCount % 2 == 0)
             width = width + width * percent;
