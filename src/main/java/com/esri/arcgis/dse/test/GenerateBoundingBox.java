@@ -75,7 +75,7 @@ public class GenerateBoundingBox {
       while (Math.abs(delta) > 100 || delta < 0) {
         double percent = (double) delta / (double) limit;
         System.out.println("# of features: " + numFeatures + ", delta: " + delta + ", loop count: " + loopCount + ", percentage: " + percent);
-        if (Math.abs(percent) > 1) {
+        if (Math.abs(percent) >= 1) {
           int sign = percent > 0 ? -1 : 1;
           width = width + width / 2 * sign;
           height = height + height / 2 * sign;
@@ -86,8 +86,8 @@ public class GenerateBoundingBox {
             height = height + height * percent;
         }
         loopCount++;
-        maxx = minx + width;
-        maxy = miny + height;
+        maxx = (minx + width) % 180.0;
+        maxy = (miny + height) % 90.0;
         bbox = minx + "," + miny + "," + maxx + "," + maxy;
         numFeatures = mapService.getCount("1=1", bbox);
         delta = limit - numFeatures;
