@@ -73,10 +73,10 @@ public class GenerateBoundingBox {
       int loopCount = 0;
 
       while (Math.abs(delta) > 100 || delta < 0) {
-        System.out.println(numFeatures + " " + delta + " " + loopCount);
         double percent = (double) delta / (double) limit;
+        System.out.println("# of features: " + numFeatures + ", delta: " + delta + ", loop count: " + loopCount + ", percentage: " + percent);
         if (Math.abs(percent) > 1) {
-          int sign = percent > 0 ? 1 : -1;
+          int sign = percent > 0 ? -1 : 1;
           width = width + width / 2 * sign;
           height = height + height / 2 * sign;
         } else {
