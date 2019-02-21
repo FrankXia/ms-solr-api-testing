@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Utils {
+public class CalculateSolrStats {
 
   public static void main(String[] args) {
     if (args.length <= 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.Utils <File name> <Number of requests>");
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateSolrStats <File name> <Number of concurrent requests>");
     } else  {
       int numRequests = Integer.parseInt(args[1]);
       computeStats(args[0], numRequests);
