@@ -16,7 +16,8 @@ public class MapServiceTester {
     String host = "localhost";
     int port = 9000;
     int limit = 10000;
-    String boundingBox = args.length == 2 ? args [1] : GenerateBoundingBox.getBbox(host, port, serviceName, limit, 180, 90,1).split("[|]")[0];
+    boolean limitTo3rdQuadrant = true;
+    String boundingBox = args.length == 2 ? args [1] : GenerateBoundingBox.getBbox(host, port, serviceName, limit, 180, 90, limitTo3rdQuadrant, 1).split("[|]")[0];
     testExportMap(host, port, serviceName, boundingBox);
   }
 
@@ -42,8 +43,9 @@ public class MapServiceTester {
 
     long start = System.currentTimeMillis();
     int limit = 10000;
+    boolean limitTo3rdQuadrant = true;
     for (int i=1; i<serviceNames.length; i++) {
-      bboxes[i] = GenerateBoundingBox.getBbox(host, port, serviceNames[i], limit, 180, 90,1).split("[|]")[0];
+      bboxes[i] = GenerateBoundingBox.getBbox(host, port, serviceNames[i], limit, 180, 90, limitTo3rdQuadrant, 1).split("[|]")[0];
     }
     System.out.println("Time to get bounding boxes => " + (System.currentTimeMillis() - start) + " ms");
 
