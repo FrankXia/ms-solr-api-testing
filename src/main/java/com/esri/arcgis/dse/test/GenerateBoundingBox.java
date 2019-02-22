@@ -12,12 +12,8 @@ public class GenerateBoundingBox {
 
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
-
-      Random random = new Random();
-      for (int i=0; i< 100; i++) System.out.println(random.nextDouble());
-
       System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox " +
-          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 100> <width: 180> <height: 90> <limit to 3rd quadrant: true>}");
+          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 100> <width: 180> <height: 90> <limit to 3rd quadrant: true> <Return limit>}");
       return;
     }
 
@@ -36,6 +32,7 @@ public class GenerateBoundingBox {
     if (args.length > 5) height = Double.parseDouble(args[5]);
     boolean limitTo3rdQuadrant = true;
     if (args.length > 6) limitTo3rdQuadrant = Boolean.parseBoolean(args[6]);
+    if (args.length > 7) limit = Integer.parseInt(args[7]);
 
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
