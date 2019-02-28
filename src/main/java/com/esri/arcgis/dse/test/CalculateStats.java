@@ -12,10 +12,10 @@ public class CalculateStats {
 
   public static void main(String[] args) {
     if (args.length < 3) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats <File name> <Number of concurrent requests> <Prefix>");
+      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats <File name> <Number of concurrent requests> <Prefix>");
       System.out.println("Sample: ");
-      System.out.println("  java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Solr request time: \"");
-      System.out.println("  java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Elastic query time: \"");
+      System.out.println("  java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Solr request time: \"");
+      System.out.println("  java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Elastic query time: \"");
     } else  {
       String fileName = args[0];
       int numRequests = Integer.parseInt(args[1]);

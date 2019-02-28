@@ -29,9 +29,9 @@ public class FeatureServiceTester {
   private static void testVariousRequestsWithStats(String[] args) {
 
     if (args.length < 4) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceTester <Host name> <Service name> <Group By field name> <Out statistics> {<Bounding Box>}");
+      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceTester <Host name> <Service name> <Group By field name> <Out statistics> {<Bounding Box>}");
       System.out.println("Sample:");
-      System.out.println("   java -cp  ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceTester localhost faa30m dest \"[" +
+      System.out.println("   java -cp  ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceTester localhost faa30m dest \"[" +
           "{\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
           "{\\\"statisticType\\\":\\\"min\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"min_speed\\\"}," +
           "{\\\"statisticType\\\":\\\"max\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"max_speed\\\"}" +

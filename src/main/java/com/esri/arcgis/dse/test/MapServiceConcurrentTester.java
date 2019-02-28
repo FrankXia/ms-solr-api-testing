@@ -23,7 +23,7 @@ public class MapServiceConcurrentTester {
       int lines2Skip = Integer.parseInt(args[5]);
       concurrentTesting(hostName, serviceName, numThreads, numCalls, fileName, lines2Skip);
     } else {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceConcurrentTester " +
+      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceConcurrentTester " +
           "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Path to bounding box file> <Number of lines to skip>");
     }
   }

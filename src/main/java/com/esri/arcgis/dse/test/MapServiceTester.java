@@ -9,7 +9,7 @@ public class MapServiceTester {
 
   private static void testOneService(String[] args) {
     if (args == null || args.length < 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceTester <Service Name> {<optional bounding box>}");
+      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.MapServiceTester <Service Name> {<optional bounding box>}");
       return;
     }
     String serviceName = args[0];

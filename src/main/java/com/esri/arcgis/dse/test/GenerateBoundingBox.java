@@ -12,7 +12,7 @@ public class GenerateBoundingBox {
 
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox " +
+      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.GenerateBoundingBox " +
           "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 100> <width: 180> <height: 90> <limit to 3rd quadrant: true> <Return limit>}");
       return;
     }
