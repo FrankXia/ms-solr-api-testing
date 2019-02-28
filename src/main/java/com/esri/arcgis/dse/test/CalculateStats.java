@@ -8,20 +8,24 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CalculateSolrStats {
+public class CalculateStats {
 
   public static void main(String[] args) {
-    if (args.length <= 1) {
-      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateSolrStats <File name> <Number of concurrent requests>");
+    if (args.length < 3) {
+      System.out.println("Usage: java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats <File name> <Number of concurrent requests> <Prefix>");
+      System.out.println("Sample: ");
+      System.out.println("  java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Solr request time: \"");
+      System.out.println("  java -cp ./target/ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.CalculateStats z100 100 \"Elastic query time: \"");
     } else  {
+      String fileName = args[0];
       int numRequests = Integer.parseInt(args[1]);
-      computeStats(args[0], numRequests);
+      String prefix =  args[2]; //  "Solr request time: ";
+      computeStats(fileName, numRequests, prefix);
     }
   }
 
-  private static void computeStats(String fileName, int numberRequests) {
+  private static void computeStats(String fileName, int numberRequests, String prefix) {
     File file = new File(fileName);
-    String prefix = "Solr request time: ";
     try {
       if (file.exists()) {
         List<Double> data = new LinkedList<>();
