@@ -35,7 +35,7 @@ public class CalculateStats {
           if (line.startsWith(prefix)) {
             line = line.substring(prefix.length()).trim();
             String[] splits = line.split(" ");
-            if (splits.length == 2) {
+            if (splits.length >= 2) {
               data.add((double)Long.parseLong(splits[0]));
               //System.out.println(splits[0]);
             }
