@@ -24,7 +24,7 @@ public class GenerateBoundingBox {
     String name = args[1];
     String fileName = "./" + args[2];
 
-    int numBBoxes = 100;
+    int numBBoxes = 259;
     double width = 180;
     double height = 90;
     if (args.length > 3) numBBoxes = Integer.parseInt(args[3]);
