@@ -1,4 +1,4 @@
-package com.esri.arcgis.dse.test;
+package com.esri.arcgis.datastore.test;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;

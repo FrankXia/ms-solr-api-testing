@@ -9,7 +9,7 @@ import com.facebook.presto.sql.tree._
 
 object SolrUtil {
 
-  private val LOGGER  = LogFactory.getLog(SolrUtil.getClass.getName)
+  private val LOGGER  = LogFactory.getLog(SolrUtils.getClass.getName)
 
   def createExtentFilterForSolrQuery(geometryFieldName: String, geometryOption: Option[(String, String)]): String = {
     val geometry = createGeometry(geometryOption)

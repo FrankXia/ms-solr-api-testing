@@ -14,7 +14,7 @@
     <httpclient.version>4.5.1</httpclient.version>
     <scala.version>2.11.8</scala.version>
     <scala.dep.version>2.11</scala.dep.version>
-    <mainClass>com.esri.arcgis.dse.test.FeatureServiceTester</mainClass>
+    <mainClass>com.esri.arcgis.datastore.test.FeatureServiceTester</mainClass>
   </properties>
 
   <dependencies>

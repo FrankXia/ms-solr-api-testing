@@ -1,4 +1,4 @@
-package com.esri.arcgis.dse.test;
+package com.esri.arcgis.datastore.test;
 
 public class Tuple {
   long requestTime;

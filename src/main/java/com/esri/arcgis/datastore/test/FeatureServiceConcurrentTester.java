@@ -1,4 +1,4 @@
-package com.esri.arcgis.dse.test;
+package com.esri.arcgis.datastore.test;
 
 import java.text.DecimalFormat;
 import java.util.LinkedList;
@@ -33,9 +33,9 @@ public class FeatureServiceConcurrentTester {
 
       concurrentTesting(host, serviceName, numThreads, numCalls, groupByFieldName, outStatisitcs, width, height);
     } else {
-      System.out.println("Usage: java -cp ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics> {<bounding box width (180)> <bounding box height (90)}");
+      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics> {<bounding box width (180)> <bounding box height (90)}");
       System.out.println("Sample:");
-      System.out.println("   java -cp  ./ms-solr-api-performance-1.0.jar com.esri.arcgis.dse.test.FeatureServiceConcurrentTester localhost faa30m 4 8 dest  \"[" +
+      System.out.println("   java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceConcurrentTester localhost faa30m 4 8 dest  \"[" +
           " {\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"min\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"min_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"max\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"max_speed\\\"} " +

@@ -1,4 +1,4 @@
-package com.esri.arcgis.dse.test;
+package com.esri.arcgis.datastore.test;
 
 import com.esri.core.geometry.*;
 
@@ -12,9 +12,9 @@ import com.facebook.presto.sql.tree.*;
 
 import java.util.Optional;
 
-public class SolrUtil {
+public class SolrUtils {
 
-  private static Log LOGGER  = LogFactory.getLog(SolrUtil.class.getName());
+  private static Log LOGGER  = LogFactory.getLog(SolrUtils.class.getName());
 
   public static String createExtentFilterForSolrQuery(String geometryFieldName, String geometryType, String geometryString)  {
     Geometry geometry = createGeometry(geometryType, geometryString);
