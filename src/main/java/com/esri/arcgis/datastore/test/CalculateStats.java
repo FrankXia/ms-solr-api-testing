@@ -74,7 +74,7 @@ public class CalculateStats {
     }
   }
 
-  private static void computeStats(Double[] data, int numberRequest) {
+  static void computeStats(Double[] data, int numberRequest) {
     Arrays.sort(data);
     double sum = 0;
     double min = Double.MAX_VALUE;
