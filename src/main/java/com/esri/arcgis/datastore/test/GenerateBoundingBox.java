@@ -51,10 +51,13 @@ public class GenerateBoundingBox {
     }
   }
 
+  static double lastMinx = -1;
+  static double lastMiny = -1;
+
   static String getBbox(String host, int port, String serviceName, int limit, double initWidth, double initHeight, boolean limitTo3rdQuadrant, int count) {
-    double minx = 0;
+    double minx = -1;
     double maxx = 180;
-    double miny = 0;
+    double miny = -1;
     double maxy = 90;
 
     Random random = new Random();
@@ -64,10 +67,32 @@ public class GenerateBoundingBox {
 
     while (true) {
       minx = random.nextDouble() * 180.0;
-      if (limitTo3rdQuadrant || topLoopCount % 2 == 0)
-        minx = minx < 0 ? minx : minx * -1;
       miny = random.nextDouble() * 90.0;
-      if (limitTo3rdQuadrant || topLoopCount % 3 == 0) miny = miny < 0 ? miny : miny * -1;
+
+      if (!limitTo3rdQuadrant) {
+        if (lastMinx < 0 && lastMiny < 0) {
+          minx = minx < 0? minx : minx * -1;
+          miny = miny > 0? miny : miny * -1;
+        } else if (lastMinx < 0 && lastMiny > 0) {
+          minx = minx > 0? minx: minx * -1;
+          miny = miny > 0? miny: miny * -1;
+        } else if (lastMinx > 0 && lastMiny > 0) {
+          minx = minx > 0? minx : minx * -1;
+          miny = miny < 0? miny : miny * -1;
+        } else {
+          minx = minx < 0? minx : minx * -1;
+          miny = miny < 0? miny : miny * -1;
+        }
+      } else {
+        if (topLoopCount % 2 == 0) {
+          minx = minx < 0 ? minx : minx * -1;
+        }
+        if (topLoopCount % 3 == 0) {
+          miny = miny < 0 ? miny : miny * -1;
+        }
+      }
+      lastMinx = minx;
+      lastMiny = miny;
 
       maxx = minx + initWidth;
       maxy = miny + initHeight;

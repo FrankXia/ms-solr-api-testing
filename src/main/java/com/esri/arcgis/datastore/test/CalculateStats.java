@@ -28,7 +28,9 @@ public class CalculateStats {
     File file = new File(fileName);
     try {
       if (file.exists()) {
+        String secondSeparateString = "total:";
         List<Double> data = new LinkedList<>();
+        List<Double> featuresList = new LinkedList<>();
         BufferedReader reader = new BufferedReader(new FileReader(file));
         String line = reader.readLine();
         while (line != null) {
@@ -37,7 +39,16 @@ public class CalculateStats {
             String[] splits = line.split(" ");
             if (splits.length >= 2) {
               data.add((double)Long.parseLong(splits[0]));
-              //System.out.println(splits[0]);
+              int index = line.indexOf(secondSeparateString);
+              //System.out.println(line + " " + index);
+              if (index > 0) {
+                line = line.substring(index + secondSeparateString.length());
+                index = line.indexOf(", ");
+                if (index > 0) {
+                  int featureCount = Integer.parseInt(line.substring(0, index));
+                  featuresList.add(featureCount*1.0);
+                }
+              }
             }
           }
           line = reader.readLine();
@@ -47,7 +58,13 @@ public class CalculateStats {
         if (numberRequests > data.size()) {
           System.out.println("Error: " + data.size() + " != " + numberRequests);
         } else {
-          computeStats(data.toArray(new Double[0]), numberRequests);
+          Double[] valueArray = data.toArray(new Double[0]);
+          Arrays.sort(valueArray);
+          computeStats(valueArray, numberRequests);
+
+          if (featuresList.size() >= numberRequests) {
+            computeStats(featuresList.toArray(new Double[0]), numberRequests);
+          }
         }
       } else {
         System.out.println("File '" + fileName + "' does not exist!");
@@ -65,7 +82,7 @@ public class CalculateStats {
     DecimalFormat df = new DecimalFormat("#.#");
 
     double squaredValue = 0.0;
-    for (int i=(data.length - numberRequest); i < data.length; i++) {
+    for (int i=(data.length - 1); i >= (data.length - numberRequest); i--) {
       double stat = data[i];
       sum += stat;
       if (stat < min) min = stat;
