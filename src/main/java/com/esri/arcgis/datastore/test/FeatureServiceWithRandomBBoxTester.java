@@ -3,6 +3,7 @@ package com.esri.arcgis.datastore.test;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Random;
 
 public class FeatureServiceWithRandomBBoxTester {
 
@@ -26,6 +27,14 @@ public class FeatureServiceWithRandomBBoxTester {
     System.out.println("======== get features from each service with a random bounding box that contains less than 10k features ========= ");
     FeatureService featureService = new FeatureService(hostName, port, tableName);
     BufferedReader reader = new BufferedReader(new FileReader(boundingBoxFileName));
+    int modNumber = (numbTests < 150) ? 100 : (250 - numbTests);
+    int startIndex = (int) (new Random().nextDouble() * modNumber);
+    if (startIndex < 0) startIndex = -1 * startIndex;
+    while (startIndex > 0) {
+      reader.readLine();
+      startIndex--;
+    }
+
     Double[] data = new Double[numbTests];
     for (int index = 0; index  < numbTests; index++) {
       long start = System.currentTimeMillis();

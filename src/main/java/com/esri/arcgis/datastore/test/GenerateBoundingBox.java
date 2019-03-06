@@ -13,7 +13,7 @@ public class GenerateBoundingBox {
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.GenerateBoundingBox " +
-          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 100> <width: 180> <height: 90> <limit to 3rd quadrant: true> <Return limit>}");
+          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 259> <width: 180> <height: 90> <Return limit : 10000>}");
       return;
     }
 
@@ -30,16 +30,14 @@ public class GenerateBoundingBox {
     if (args.length > 3) numBBoxes = Integer.parseInt(args[3]);
     if (args.length > 4) width = Double.parseDouble(args[4]);
     if (args.length > 5) height = Double.parseDouble(args[5]);
-    boolean limitTo3rdQuadrant = true;
-    if (args.length > 6) limitTo3rdQuadrant = Boolean.parseBoolean(args[6]);
-    if (args.length > 7) limit = Integer.parseInt(args[7]);
+    if (args.length > 6) limit = Integer.parseInt(args[6]);
 
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
       int validCount = 0;
       while (validCount < numBBoxes) {
-        String boundingBox = getBbox(host, port, name, limit, width, height, limitTo3rdQuadrant, validCount);
+        String boundingBox = getBbox(host, port, name, limit, width, height, validCount);
         writer.write(boundingBox);
         writer. newLine();
         validCount++;
@@ -51,64 +49,51 @@ public class GenerateBoundingBox {
     }
   }
 
-  static double lastMinx = -1;
-  static double lastMiny = -1;
 
-  static String getBbox(String host, int port, String serviceName, int limit, double initWidth, double initHeight, boolean limitTo3rdQuadrant, int count) {
-    double minx = -1;
-    double maxx = 180;
-    double miny = -1;
-    double maxy = 90;
+  static class MinXY {
+    double minx;
+    double miny;
 
-    Random random = new Random();
-    String bbox = null;
-    long numFeatures = 0;
-    int topLoopCount = 0;
+    public MinXY(double minx, double miny) {
+      this.minx = minx;
+      this.miny = miny;
+    }
+  }
+  private static Random random = new Random();
+  static MinXY getBbox(double width, double height) {
+    double MAX_W = 360;
+    double MAX_H = 180;
+    double MIN_X = -180;
+    double MIN_Y = -90;
 
+    double randomX = random.nextDouble();
+    double randomY = random.nextDouble();
+    double minx = MIN_X + randomX * (MAX_W - width);
+    double miny = MIN_Y + randomY * (MAX_H - height);
+    return new MinXY(minx, miny);
+  }
+
+  static String getBbox(String host, int port, String serviceName, int limit, double initWidth, double initHeight,  int count) {
+    String bbox;
+    long numFeatures;
     while (true) {
-      minx = random.nextDouble() * 180.0;
-      miny = random.nextDouble() * 90.0;
+      MinXY minXY = getBbox(initWidth, initHeight);
+      double minx = minXY.minx;
+      double miny = minXY.miny;
 
-      if (!limitTo3rdQuadrant) {
-        if (lastMinx < 0 && lastMiny < 0) {
-          minx = minx < 0? minx : minx * -1;
-          miny = miny > 0? miny : miny * -1;
-        } else if (lastMinx < 0 && lastMiny > 0) {
-          minx = minx > 0? minx: minx * -1;
-          miny = miny > 0? miny: miny * -1;
-        } else if (lastMinx > 0 && lastMiny > 0) {
-          minx = minx > 0? minx : minx * -1;
-          miny = miny < 0? miny : miny * -1;
-        } else {
-          minx = minx < 0? minx : minx * -1;
-          miny = miny < 0? miny : miny * -1;
-        }
-      } else {
-        if (topLoopCount % 2 == 0) {
-          minx = minx < 0 ? minx : minx * -1;
-        }
-        if (topLoopCount % 3 == 0) {
-          miny = miny < 0 ? miny : miny * -1;
-        }
-      }
-      lastMinx = minx;
-      lastMiny = miny;
-
-      maxx = minx + initWidth;
-      maxy = miny + initHeight;
+      double maxx = minx + initWidth;
+      double maxy = miny + initHeight;
 
       double width = maxx - minx;
       double height = maxy - miny;
 
-      bbox = minx + "," + miny + "," + maxx + "," + maxy;
+      bbox = minx +"," + miny + "," +maxx+","+maxy;
       MapService mapService = new MapService(host, port, serviceName);
       numFeatures = mapService.getCount("1=1", bbox);
       bbox = bbox + "|" + numFeatures;
 
       long delta = limit - numFeatures;
       int loopCount = 0;
-
-      topLoopCount++;
 
       while (Math.abs(delta) > 100 || delta < 0) {
         double percent = (double) delta / (double) limit;

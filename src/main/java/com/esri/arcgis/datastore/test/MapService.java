@@ -5,7 +5,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import javax.sound.midi.SysexMessage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
@@ -15,7 +14,7 @@ public class MapService {
   private int dpi = 96;
   private boolean transparent = true;
   private String format = "png";
-  private String sizeString = "512,512";
+  private String sizeString = "750,500";
   private String bbox = "10,10,50,50";
   private int bboxSR = 4326;
   private int imageSR = 102100;

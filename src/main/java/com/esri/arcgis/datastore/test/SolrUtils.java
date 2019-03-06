@@ -11,6 +11,7 @@ import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.*;
 
 import java.util.Optional;
+import java.util.Random;
 
 public class SolrUtils {
 
@@ -166,4 +167,26 @@ public class SolrUtils {
     return new HttpSolrClient(baseUrl);
   }
 
+
+  public static void main(String[] args) {
+
+    int width = Integer.parseInt( args[0] );
+    int height = Integer.parseInt( args[1]);
+
+    int W = 360;
+    int H = 180;
+
+    int gtpoint5 = 0;
+    int ltpoint5 = 0;
+    Random random = new Random();
+    for (int i=0; i< 100; i++) {
+      double dd = random.nextDouble();
+      if (dd >= 0.5)
+        gtpoint5++;
+      else
+        ltpoint5++;
+      System.out.println(dd + ", " + ( -180 + dd * (W - width)) + ", " + (-90 + dd * (H - height)));
+    }
+    System.out.println(gtpoint5 + ", " + ltpoint5);
+  }
 }
