@@ -2,8 +2,11 @@ package com.esri.arcgis.datastore.test;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,6 +31,7 @@ public class MapService {
   private String host;
   private int port;
   private String serviceName;
+  private int defaultTimeout = 60; // seconds
 
   public MapService(String host, int port, String serviceName) {
     this.host = host;
@@ -50,7 +54,7 @@ public class MapService {
     queryParameters.append("&size=").append(URLEncoder.encode(sizeString));
     queryParameters.append("&f=").append(f);
 
-    long response = executeMapExportRequest(queryParameters.toString());
+    long response = executeMapExportRequest(queryParameters.toString(), defaultTimeout);
     if (response == -1) {
       System.out.println("?????? failed to export image!");
     }
@@ -58,7 +62,7 @@ public class MapService {
     return response;
   }
 
-  public long exportMap(String bbox, int bboxSR, String aggregationStyle) {
+  public long exportMap(String bbox, int bboxSR, String aggregationStyle, int timeoutInSeconds) {
     this.bbox = bbox;
     this.bboxSR = bboxSR;
     this.aggregationStyle = aggregationStyle;
@@ -77,7 +81,7 @@ public class MapService {
     queryParameters.append("&size=").append(URLEncoder.encode(sizeString));
     queryParameters.append("&f=").append(f);
 
-    long response = executeMapExportRequest(queryParameters.toString());
+    long response = executeMapExportRequest(queryParameters.toString(), timeoutInSeconds);
     if (response == -1) {
       System.out.println("?????? failed to export image!");
     }
@@ -99,15 +103,16 @@ public class MapService {
     return template;
   }
 
-  private long executeMapExportRequest(String queryParameters) {
+  private long executeMapExportRequest(String queryParameters, int timeoutInSeconds) {
     HttpClient client = httpClient;
     long start = System.currentTimeMillis();
     try {
       String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + queryParameters;
       System.out.println(url);
 
-
       HttpGet request = new HttpGet(url);
+      request.setConfig(requestConfigWithTimeout(timeoutInSeconds * 1000));
+
       HttpResponse response = client.execute(request);
       System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
 
@@ -124,6 +129,14 @@ public class MapService {
       return -1;
     }
     return (System.currentTimeMillis() - start);
+  }
+
+  public RequestConfig requestConfigWithTimeout(int timeoutInMilliseconds) {
+    return RequestConfig.copy(RequestConfig.DEFAULT)
+        .setSocketTimeout(timeoutInMilliseconds)
+        .setConnectTimeout(timeoutInMilliseconds)
+        .setConnectionRequestTimeout(timeoutInMilliseconds)
+        .build();
   }
 
   long getCount(String where, String boundingBox) {

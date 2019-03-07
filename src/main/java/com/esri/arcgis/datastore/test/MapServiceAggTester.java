@@ -14,21 +14,26 @@ public class MapServiceAggTester {
       if (args.length > 5)
         aggStyle = args[5];
 
-      singleTesting(hostName, serviceName, width, height, aggStyle, numCalls);
+      int timeoutInSeconds = 60;
+      if (args.length > 6) {
+        timeoutInSeconds = Integer.parseInt(args[6]);
+      }
+
+      singleTesting(hostName, serviceName, width, height, aggStyle, numCalls, timeoutInSeconds);
 
     } else {
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.MapServiceAggTester " +
-          "<Host name> <Service name> <Number of calls> <Bounding box width> <Bounding box height> {<Aggregation style>}");
+          "<Host name> <Service name> <Number of calls> <Bounding box width> <Bounding box height> {<Aggregation style> <Timeout in seconds>}");
     }
   }
 
-  private static void singleTesting(String host, String serviceName, int width, int height, String aggStyle, int numCalls) {
+  private static void singleTesting(String host, String serviceName, int width, int height, String aggStyle, int numCalls, int timeoutInSeconds) {
     int port = 9000;
     MapService mapService = new MapService(host, port, serviceName);
     Double[] times = new Double[numCalls];
     for (int index=0; index < numCalls; index++) {
       String boundingBox = getBbox(width, height);
-      long time = mapService.exportMap(boundingBox, 4326, aggStyle);
+      long time = mapService.exportMap(boundingBox, 4326, aggStyle, timeoutInSeconds);
       times[index] = time * 1.0;
     }
     CalculateStats.computeStats(times, numCalls);
