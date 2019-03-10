@@ -42,6 +42,6 @@ public class FeatureServiceWithRandomBBoxTester {
       featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", boundingBox);
       data[index] = (System.currentTimeMillis() - start) * 1.0;
     }
-    CalculateStats.computeStats(data, numbTests);
+    Utils.computeStats(data, numbTests);
   }
 }

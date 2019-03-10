@@ -1,15 +1,8 @@
 package com.esri.arcgis.datastore.test;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URLEncoder;
 
 public class MapService {
@@ -27,34 +20,36 @@ public class MapService {
   private int featureLimit = 10000;
   private String aggregationStyle = "square";
 
-  private HttpClient httpClient = HttpClientBuilder.create().build();
+  private HttpClient httpClient;
   private String host;
   private int port;
   private String serviceName;
-  private int defaultTimeout = 60; // seconds
+  private int timeoutInSeconds = 60; // seconds
 
-  public MapService(String host, int port, String serviceName) {
+  public MapService(String host, int port, String serviceName, int timeoutInSeconds) {
     this.host = host;
     this.port = port;
     this.serviceName = serviceName;
+
+    RequestConfig.Builder requestBuilder = RequestConfig.custom();
+    requestBuilder.setConnectTimeout(timeoutInSeconds * 1000);
+    requestBuilder.setSocketTimeout(timeoutInSeconds * 1000);
+    requestBuilder.setConnectionRequestTimeout(timeoutInSeconds * 1000);
+
+    HttpClientBuilder builder = HttpClientBuilder.create();
+    builder.setDefaultRequestConfig(requestBuilder.build());
+//    builder.disableAutomaticRetries();
+    httpClient = builder.build();
+
+    this.timeoutInSeconds = timeoutInSeconds;
   }
 
   public long exportMap(String bbox, int bboxSR) {
     this.bbox = bbox;
     this.bboxSR = bboxSR;
 
-    StringBuilder queryParameters = new StringBuilder();
-    queryParameters.append("dpi=").append(dpi);
-    queryParameters.append("&transparent=").append(transparent);
-    queryParameters.append("&format=").append(format);
-    queryParameters.append("&dynamicLayers=").append(URLEncoder.encode(createDynamicLayers(featureLimit, serviceName)));
-    queryParameters.append("&bbox=").append(URLEncoder.encode(bbox));
-    queryParameters.append("&bboxSR=").append(bboxSR);
-    queryParameters.append("&imageSR=").append(imageSR);
-    queryParameters.append("&size=").append(URLEncoder.encode(sizeString));
-    queryParameters.append("&f=").append(f);
-
-    long response = executeMapExportRequest(queryParameters.toString(), defaultTimeout);
+    String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + getParameters();
+    long response = Utils.executeHttpGETRequest(httpClient, url, serviceName);
     if (response == -1) {
       System.out.println("?????? failed to export image!");
     }
@@ -62,14 +57,7 @@ public class MapService {
     return response;
   }
 
-  public long exportMap(String bbox, int bboxSR, String aggregationStyle, int timeoutInSeconds) {
-    this.bbox = bbox;
-    this.bboxSR = bboxSR;
-    this.aggregationStyle = aggregationStyle;
-
-    dynamicLayers = createDynamicLayers(featureLimit, serviceName);
-    //System.out.println(dynamicLayers);
-
+  private String getParameters() {
     StringBuilder queryParameters = new StringBuilder();
     queryParameters.append("dpi=").append(dpi);
     queryParameters.append("&transparent=").append(transparent);
@@ -80,10 +68,29 @@ public class MapService {
     queryParameters.append("&imageSR=").append(imageSR);
     queryParameters.append("&size=").append(URLEncoder.encode(sizeString));
     queryParameters.append("&f=").append(f);
+    return  queryParameters.toString();
+  }
 
-    long response = executeMapExportRequest(queryParameters.toString(), timeoutInSeconds);
+  public long exportMap(String bbox, int bboxSR, String aggregationStyle) {
+    this.bbox = bbox;
+    this.bboxSR = bboxSR;
+    this.aggregationStyle = aggregationStyle;
+
+    dynamicLayers = createDynamicLayers(featureLimit, serviceName);
+    //System.out.println(dynamicLayers);
+
+    long start = System.currentTimeMillis();
+    String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + getParameters();
+    long response = Utils.executeHttpGETRequest(httpClient,url, serviceName);
+
+    // System.out.println(queryParameters.toString());
+    // String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?";
+    // long response = doHttpUrlConnectionAction(url, queryParameters.toString());
+
+
     if (response == -1) {
-      System.out.println("?????? failed to export image!");
+      System.out.println("?????? failed to export image! " + (System.currentTimeMillis() - start) + " ms");
+      return (System.currentTimeMillis() - start);
     }
     System.out.println("Export image succeeded!");
     return response;
@@ -103,44 +110,10 @@ public class MapService {
     return template;
   }
 
-  private long executeMapExportRequest(String queryParameters, int timeoutInSeconds) {
-    HttpClient client = httpClient;
-    long start = System.currentTimeMillis();
-    try {
-      String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + queryParameters;
-      System.out.println(url);
-
-      HttpGet request = new HttpGet(url);
-      request.setConfig(requestConfigWithTimeout(timeoutInSeconds * 1000));
-
-      HttpResponse response = client.execute(request);
-      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
-
-      BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-      StringBuilder result = new StringBuilder();
-      String line = "";
-      while ((line = rd.readLine()) != null) {
-        result.append(line);
-      }
-
-      System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-      return -1;
-    }
-    return (System.currentTimeMillis() - start);
-  }
-
-  public RequestConfig requestConfigWithTimeout(int timeoutInMilliseconds) {
-    return RequestConfig.copy(RequestConfig.DEFAULT)
-        .setSocketTimeout(timeoutInMilliseconds)
-        .setConnectTimeout(timeoutInMilliseconds)
-        .setConnectionRequestTimeout(timeoutInMilliseconds)
-        .build();
-  }
 
   long getCount(String where, String boundingBox) {
     FeatureService featureService = new FeatureService(host, port, serviceName);
     return featureService.getCount(where, boundingBox);
   }
+
 }

@@ -12,17 +12,15 @@ import java.util.stream.Stream;
 public class MapServiceAggConcurrentTester {
 
   public static void main(String[] args) {
-    if (args.length >= 6) {
+    if (args.length >= 7) {
       String hostName = args[0];
       String serviceName = args[1];
       int numThreads = Integer.parseInt(args[2]);
       int numCalls = Integer.parseInt(args[3]);
       int width = Integer.parseInt(args[4]);
       int height = Integer.parseInt(args[5]);
-      String aggStyle = "square";
-      if (args.length > 6) {
-        aggStyle = args[6];
-      }
+      String aggStyle = args[6];
+
       int timeoutInSeconds = 60;
       if (args.length > 7) {
         timeoutInSeconds = Integer.parseInt(args[7]);
@@ -34,22 +32,22 @@ public class MapServiceAggConcurrentTester {
       }
     } else {
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.MapServiceAggConcurrentTester " +
-          "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Bounding box width> <Bounding box height> {<Aggregation style> <Timeout in seconds>}");
+          "<Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Bounding box width> <Bounding box height> <Aggregation style> {<Timeout in seconds: 60>}");
     }
   }
 
   private static void singleTesting(String host, String serviceName, int width, int height, String aggStyle, int timeoutInSeconds) {
     int port = 9000;
-    String boundingBox = MapServiceAggTester.getBbox(width, height);
-    MapService mapService = new MapService(host, port, serviceName);
-    long time = mapService.exportMap(boundingBox, 4326, aggStyle, timeoutInSeconds);
+    String boundingBox = Utils.getBbox(width, height);
+    MapService mapService = new MapService(host, port, serviceName,timeoutInSeconds);
+    long time = mapService.exportMap(boundingBox, 4326, aggStyle);
     System.out.println( "Time -> " + time);
   }
 
   private static Callable<Long> createTask(String host, int port, String serviceName, String boundingBox, String aggStyle, int timeoutInSeconds) {
     Callable<Long> task = () -> {
-      MapService mapService = new MapService(host, port, serviceName);
-      return mapService.exportMap(boundingBox, 4326, aggStyle, timeoutInSeconds);
+      MapService mapService = new MapService(host, port, serviceName, timeoutInSeconds);
+      return mapService.exportMap(boundingBox, 4326, aggStyle);
     };
     return task;
   }
@@ -59,13 +57,17 @@ public class MapServiceAggConcurrentTester {
 
     int port = 9000;
     DecimalFormat df = new DecimalFormat("#.#");
+    df.setGroupingUsed(true);
+    df.setGroupingSize(3);
+
     List<Callable<Long>> callables = new LinkedList<>();
 
+    long start = System.currentTimeMillis();
     try {
 
       int lineRead = 0;
       while (lineRead < numbConcurrentCalls) {
-        String boundingBox = MapServiceAggTester.getBbox(width, height);
+        String boundingBox = Utils.getBbox(width, height);
         callables.add(createTask(host, port, serviceName, boundingBox, aggStyle, timeoutInSeconds));
         lineRead++;
       }
@@ -122,6 +124,8 @@ public class MapServiceAggConcurrentTester {
       executor.shutdownNow();
       System.out.println("shutdown finished");
     }
+
+    System.out.println("Total time: " + (System.currentTimeMillis() - start) + " ms");
   }
 
 }

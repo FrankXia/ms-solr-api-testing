@@ -9,24 +9,29 @@ import java.util.*;
 public class CalculateStats {
 
   public static void main(String[] args) {
+
     if (args.length < 3) {
-      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.CalculateStats <File name> <Number of concurrent requests> <Prefix>");
+      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.CalculateStats <File name> <Number of concurrent requests> <Prefix> {<Datastore request multiples>}");
       System.out.println("Sample: ");
       System.out.println("  java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.CalculateStats z100 100 \"Solr request time: \"");
-      System.out.println("  java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.CalculateStats z100 100 \"Elastic query time: \"");
+      System.out.println("  java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.CalculateStats z100 100 \"Elastic query time: \" 2");
     } else  {
       String fileName = args[0];
       int numRequests = Integer.parseInt(args[1]);
       String prefix =  args[2]; //  "Solr request time: ";
+      int datastoreRequestRatio = 1;
 
-      //computeStatsForAggregationESTimeOnly(fileName, numRequests, prefix);
-      computeStats(fileName, numRequests, prefix);
+      if (args.length > 4) {
+        datastoreRequestRatio = Integer.parseInt(args[4]);
+      }
+
+
+      // computeStatsForSimpleRequestTimeOnly(fileName, numRequests, prefix);
+      computeStats(fileName, numRequests, prefix, datastoreRequestRatio);
     }
   }
 
- private  static DecimalFormat df = new DecimalFormat("#.#");
-
-  private static void computeStatsForAggregationESTimeOnly(String fileName, int numberRequests, String prefix) {
+  private static void computeStatsForSimpleRequestTimeOnly(String fileName, int numberRequests, String prefix) {
     File file = new File(fileName);
     try {
       if (file.exists()) {
@@ -62,10 +67,10 @@ public class CalculateStats {
         } else {
           Double[] valueArray = data.toArray(new Double[0]);
           Arrays.sort(valueArray);
-          computeStatsForAggregationESTimeOnly(valueArray, numberRequests);
+          computeStatsForSingpleRequestTimeOnly(valueArray, numberRequests);
 
           if (featuresList.size() >= numberRequests) {
-            computeStatsForAggregationESTimeOnly(featuresList.toArray(new Double[0]), numberRequests);
+            computeStatsForSingpleRequestTimeOnly(featuresList.toArray(new Double[0]), numberRequests);
           }
         }
       } else {
@@ -76,7 +81,7 @@ public class CalculateStats {
     }
   }
 
-  private static void computeStatsForAggregationESTimeOnly(Double[] data, int numberRequest) {
+  private static void computeStatsForSingpleRequestTimeOnly(Double[] data, int numberRequest) {
     Arrays.sort(data);
     double sum = 0;
     double min = Double.MAX_VALUE;
@@ -99,7 +104,7 @@ public class CalculateStats {
     System.out.println("Average, min, max and std_dev: | " + df.format(avg) +  " | " + df.format(min) + " | " + df.format(max) + " | " + df.format(std_dev) + " |");
   }
 
-  private static void computeStats(String fileName, int numberRequests, String prefix) {
+  private static void computeStats(String fileName, int numberRequests, String prefix, int datastoreRequestRatio) {
     File file = new File(fileName);
     try {
       if (file.exists()) {
@@ -129,25 +134,37 @@ public class CalculateStats {
         reader.close();
         System.out.println(count + ", # of requests: " + timeFeatures.size());
 
-        if (numberRequests * 2 != timeFeatures.size()) {
-          System.out.println("Error: " + timeFeatures.size() + " != " + numberRequests);
+        if (numberRequests * datastoreRequestRatio > timeFeatures.size()) {
+          System.out.println("Error: " + timeFeatures.size() + " < " + datastoreRequestRatio * numberRequests);
+          Collections.sort(timeFeatures, new SortByFeatures());
+          for (int i=0; i < timeFeatures.size(); i++) {
+            System.out.println(timeFeatures.get(i).features + " : " + timeFeatures.get(i).time);
+          }
         } else {
+          int extra = timeFeatures.size() - numberRequests * datastoreRequestRatio;
+          if (extra > 0) {
+            System.out.println("WARNING: the number of data store requests is greater than concurrent requests of "  + numberRequests + ", " + extra/2);
+          }
 
           Double[] times = new Double[numberRequests];
           Double[] features = new Double[numberRequests];
           int index = 0;
           Collections.sort(timeFeatures, new SortByFeatures());
-          for (int i=0; i<timeFeatures.size(); i = i + 2) {
+          for (int i=extra; i < timeFeatures.size(); i = i + datastoreRequestRatio) {
             TimeFeature timeFeature1 = timeFeatures.get(i);
-            TimeFeature timeFeature2 = timeFeatures.get(i+1);
-            times[index] = timeFeature1.time + timeFeature2.time;
-            features[index] = (double) ((timeFeature1.features + timeFeature2.features)/2);
+            if (datastoreRequestRatio == 1) {
+              times[index] = timeFeature1.time;
+              features[index] = (double) (timeFeature1.features);
+            } else if (datastoreRequestRatio == 2) {
+              TimeFeature timeFeature2 = timeFeatures.get(i + 1);
+              times[index] = timeFeature1.time + timeFeature2.time;
+              features[index] = (double) ((timeFeature1.features + timeFeature2.features) / datastoreRequestRatio);
+            }
             index++;
           }
 
-          Arrays.sort(times);
-          computeStats(times, numberRequests);
-          computeStats(features, numberRequests);
+          Utils.computeStats(times, numberRequests);
+          Utils.computeStats(features, numberRequests);
         }
       } else {
         System.out.println("File '" + fileName + "' does not exist!");
@@ -155,28 +172,6 @@ public class CalculateStats {
     }catch (Exception ex) {
       ex.printStackTrace();
     }
-  }
-
-  static void computeStats(Double[] data, int numberRequest) {
-    Arrays.sort(data);
-    double sum = 0;
-    double min = Double.MAX_VALUE;
-    double max = Double.MIN_VALUE;
-
-    double squaredValue = 0.0;
-    for (int i= 0; i < numberRequest; i++) {
-      double stat = data[i];
-      sum += stat;
-      if (stat < min) min = stat;
-      if (stat > max) max = stat;
-      squaredValue += stat * stat;
-    }
-
-    double avg = sum / numberRequest;
-    double std_dev = Math.sqrt( (squaredValue - numberRequest * avg * avg) / (numberRequest - 1) );
-
-    System.out.println("Total data points: " + numberRequest);
-    System.out.println("Average, min, max and std_dev: | " + df.format(avg) +  " | " + df.format(min) + " | " + df.format(max) + " | " + df.format(std_dev) + " |");
   }
 }
 

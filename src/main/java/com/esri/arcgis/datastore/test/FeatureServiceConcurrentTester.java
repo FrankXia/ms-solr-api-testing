@@ -66,6 +66,9 @@ public class FeatureServiceConcurrentTester {
 
     int port = 9000;
     DecimalFormat df = new DecimalFormat("#.#");
+    df.setGroupingUsed(true);
+    df.setGroupingSize(3);
+
     List<Callable<Tuple>> callables = new LinkedList<>();
 
     try {

@@ -1,14 +1,10 @@
 package com.esri.arcgis.datastore.test;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.util.*;
 
@@ -174,72 +170,6 @@ public class FeatureService {
     return new Tuple(System.currentTimeMillis() - start, numFeatures);
   }
 
-
-  JSONObject getStates(String fieldName) {
-    int solrPort = 8983;
-    HttpClient client = httpClient;
-    try {
-      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
-      System.out.println(url);
-
-      HttpGet request = new HttpGet(url);
-      HttpResponse response = client.execute(request);
-      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
-      BufferedReader rd = new BufferedReader(
-          new InputStreamReader(response.getEntity().getContent()));
-      StringBuilder result = new StringBuilder();
-      String line = "";
-      while ((line = rd.readLine()) != null) {
-        result.append(line);
-      }
-      String jsonString = result.toString();
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return null;
-  }
-
-  List<String> getUniqueValues(String fieldName) {
-    int solrPort = 8983;
-    HttpClient client = httpClient;
-    List<String> uniqueValues = new LinkedList<String>();
-    try {
-      int maxReturns = 100;
-      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
-      System.out.println(url);
-      System.out.println(url.substring(90));
-
-      HttpGet request = new HttpGet(url);
-      HttpResponse response = client.execute(request);
-      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
-      BufferedReader rd = new BufferedReader(
-          new InputStreamReader(response.getEntity().getContent()));
-      StringBuilder result = new StringBuilder();
-      String line = "";
-      while ((line = rd.readLine()) != null) {
-        result.append(line);
-      }
-      String jsonString = result.toString();
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
-
-      for (int i=0; i<buckets.length(); i++) {
-        JSONObject bucket = buckets.getJSONObject(i);
-        String key = bucket.get("val").toString();
-        uniqueValues.add(key);
-      }
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return uniqueValues;
-  }
-
   private String composeGetRequestQueryParameters() {
     StringBuilder request = new StringBuilder();
     request.append("where=").append(URLEncoder.encode(where));
@@ -329,22 +259,61 @@ public class FeatureService {
       String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/FeatureServer/0/query?" + queryParameters;
       System.out.println(url);
       long start = System.currentTimeMillis();
-      HttpGet request = new HttpGet(url);
-      HttpResponse response = client.execute(request);
-      System.out.println("Response Code : " + response.getStatusLine().getStatusCode());
-
-      BufferedReader rd = new BufferedReader(
-          new InputStreamReader(response.getEntity().getContent()));
-      StringBuilder result = new StringBuilder();
-      String line = "";
-      while ((line = rd.readLine()) != null) {
-        result.append(line);
-      }
+      String result = Utils.executeHttpGET(client, url);
       System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
-      return result.toString();
+      return result;
     } catch (Exception ex) {
       ex.printStackTrace();
     }
     return null;
   }
+
+//
+//  Solr related functions
+//
+  JSONObject getStates(String fieldName) {
+    int solrPort = 8983;
+    HttpClient client = httpClient;
+    try {
+      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
+      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
+      System.out.println(url);
+
+      String jsonString = Utils.executeHttpGET(client, url);
+
+      JSONObject jsonObject = new JSONObject(jsonString);
+      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return null;
+  }
+
+  List<String> getUniqueValues(String fieldName) {
+    int solrPort = 8983;
+    HttpClient client = httpClient;
+    List<String> uniqueValues = new LinkedList<String>();
+    try {
+      int maxReturns = 100;
+      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
+      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
+      System.out.println(url);
+      System.out.println(url.substring(90));
+
+      String jsonString = Utils.executeHttpGET(client, url);
+
+      JSONObject jsonObject = new JSONObject(jsonString);
+      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
+
+      for (int i=0; i<buckets.length(); i++) {
+        JSONObject bucket = buckets.getJSONObject(i);
+        String key = bucket.get("val").toString();
+        uniqueValues.add(key);
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return uniqueValues;
+  }
+
 }

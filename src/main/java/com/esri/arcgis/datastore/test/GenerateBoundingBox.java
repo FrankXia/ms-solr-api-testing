@@ -88,7 +88,7 @@ public class GenerateBoundingBox {
       double height = maxy - miny;
 
       bbox = minx +"," + miny + "," +maxx+","+maxy;
-      MapService mapService = new MapService(host, port, serviceName);
+      MapService mapService = new MapService(host, port, serviceName, 100);
       numFeatures = mapService.getCount("1=1", bbox);
       bbox = bbox + "|" + numFeatures;
 

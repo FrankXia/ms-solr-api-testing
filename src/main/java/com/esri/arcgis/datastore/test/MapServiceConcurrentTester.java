@@ -30,7 +30,7 @@ public class MapServiceConcurrentTester {
 
   private static Callable<Long> createTask(String host, int port, String serviceName, String boundingBox) {
     Callable<Long> task = () -> {
-      MapService mapService = new MapService(host, port, serviceName);
+      MapService mapService = new MapService(host, port, serviceName, 100);
       return mapService.exportMap(boundingBox, 4326);
     };
     return task;
@@ -41,6 +41,9 @@ public class MapServiceConcurrentTester {
 
     int port = 9000;
     DecimalFormat df = new DecimalFormat("#.#");
+    df.setGroupingUsed(true);
+    df.setGroupingSize(3);
+
     List<Callable<Long>> callables = new LinkedList<>();
 
     try {

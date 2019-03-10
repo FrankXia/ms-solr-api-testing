@@ -16,13 +16,12 @@ public class MapServiceTester {
     String host = "localhost";
     int port = 9000;
     int limit = 10000;
-    boolean limitTo3rdQuadrant = true;
     String boundingBox = args.length == 2 ? args [1] : GenerateBoundingBox.getBbox(host, port, serviceName, limit, 180, 90, 1).split("[|]")[0];
     testExportMap(host, port, serviceName, boundingBox);
   }
 
   private static void testExportMap(String host, int port, String serviceName, String boundingBox) {
-    MapService mapService = new MapService(host, port, serviceName);
+    MapService mapService = new MapService(host, port, serviceName, 100);
     mapService.exportMap(boundingBox, 4326);
   }
 
@@ -43,7 +42,7 @@ public class MapServiceTester {
 
     for (int index =0; index < serviceNames.length; index++) {
       String name = serviceNames[index];
-      MapService mapService = new MapService(host, port, name);
+      MapService mapService = new MapService(host, port, name, 100);
       mapService.exportMap(bboxes[index], 4326);
     }
   }
