@@ -58,6 +58,8 @@ public class MapService {
   }
 
   private String getParameters() {
+    this.dynamicLayers = createDynamicLayers(featureLimit, serviceName);
+
     StringBuilder queryParameters = new StringBuilder();
     queryParameters.append("dpi=").append(dpi);
     queryParameters.append("&transparent=").append(transparent);
@@ -75,9 +77,6 @@ public class MapService {
     this.bbox = bbox;
     this.bboxSR = bboxSR;
     this.aggregationStyle = aggregationStyle;
-
-    dynamicLayers = createDynamicLayers(featureLimit, serviceName);
-    //System.out.println(dynamicLayers);
 
     long start = System.currentTimeMillis();
     String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/MapServer/export?" + getParameters();
