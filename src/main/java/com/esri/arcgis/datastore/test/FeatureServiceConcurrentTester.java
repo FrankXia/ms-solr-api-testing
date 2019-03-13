@@ -12,8 +12,6 @@ import java.util.stream.Stream;
 
 public class FeatureServiceConcurrentTester {
 
-  private static Random random = new Random();
-
   public static void main(String[] args) {
     double width = 180.0;
     double height = 90.0;
@@ -40,7 +38,7 @@ public class FeatureServiceConcurrentTester {
     } else {
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceConcurrentTester <Host name> <Service name> <Number of threads> <Number of concurrent calls (<=100)> <Group By field name> <Out Statistics> {<bounding box width (180)> <bounding box height (90)> <Timeout in seconds>}");
       System.out.println("Sample:");
-      System.out.println("   java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceConcurrentTester localhost faa30m 4 8 dest  \"[" +
+      System.out.println("   java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceConcurrentTester localhost faa30m 4 4 dest  \"[" +
           " {\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"min\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"min_speed\\\"}," +
           " {\\\"statisticType\\\":\\\"max\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"max_speed\\\"} " +
@@ -57,15 +55,6 @@ public class FeatureServiceConcurrentTester {
     return task;
   }
 
-  private static String generateRandomBoundingBox(double width, double height)  {
-    double minx = random.nextDouble() * 180.0;
-    minx = minx <= 0.0? minx : (-1) * minx;
-    double miny = random.nextDouble() * 90.0;
-    miny = miny <= 0.0? miny: (-1) * miny;
-
-    return minx +"," + miny + "," + (minx+width) + "," + (miny + height);
-  }
-
   private static void concurrentTesting(String host, String serviceName, int numbThreads, int numbConcurrentCalls, String groupByFieldName, String outStatistics, double width, double height, int timeoutInSeconds) {
     ExecutorService executor = Executors.newFixedThreadPool(numbThreads);
 
@@ -78,7 +67,7 @@ public class FeatureServiceConcurrentTester {
 
     try {
       for (int index=0; index < numbConcurrentCalls; index++) {
-        String boundingBox = generateRandomBoundingBox(width, height);
+        String boundingBox = Utils.getRandomBoundingBox(width, height);
         callables.add(createTask(host, port, serviceName, groupByFieldName, outStatistics, boundingBox, timeoutInSeconds));
       }
 

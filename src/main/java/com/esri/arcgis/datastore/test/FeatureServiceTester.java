@@ -103,7 +103,7 @@ public class FeatureServiceTester {
     String fieldName = "orig";
     boolean isStringField = true;
 
-    String boundingBox = generateBoundingBox(boundingBoxWidth);
+    String boundingBox = Utils.getRandomBoundingBox(boundingBoxWidth, boundingBoxWidth/2);
     String timeFieldName = "ts";
 
     try {
@@ -120,7 +120,7 @@ public class FeatureServiceTester {
 
   private static void testGFeaturesWithBoundingBoxAndTimeExtent(String hostName, int port, String[] tableNames, double boundingBoxWidth) {
     System.out.println("======== get features from each service with a 10 degree random bounding box and time extent ========= ");
-    String boundingBox = generateBoundingBox(boundingBoxWidth);
+    String boundingBox = Utils.getRandomBoundingBox(boundingBoxWidth, boundingBoxWidth/2);
 
     String fieldName = "ts";
     try {
@@ -175,7 +175,7 @@ public class FeatureServiceTester {
 
   private static void testGetFeaturesWithBoundingBox(String hostName, int port, String[] tableNames, double boundingBoxWidth) {
     System.out.println("======== get features from each service with a 10 degree random bounding box ========= ");
-    String boundingBox = generateBoundingBox(boundingBoxWidth);
+    String boundingBox = Utils.getRandomBoundingBox(boundingBoxWidth, boundingBoxWidth/2);
     for (String table: tableNames) {
       FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
       featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", boundingBox);
@@ -211,45 +211,6 @@ public class FeatureServiceTester {
       String where = fieldName + " > " + min + " AND " + fieldName + " < " + (min + random);
       featureService.getFeaturesWithWhereClause(where);
     }
-  }
-
-  private static String generateBoundingBox(double width) {
-    Random random = new Random();
-    boolean sign = random.nextBoolean();
-
-    double lon = random.nextDouble();
-    double lat = random.nextDouble();
-
-    lon = sign? lon * -180 : lon * 180;
-    lat = sign? lat * -90 : lat * 90;
-
-    double minx = lon;
-    double maxx = lon;
-    if (lon + width/2.0 > 180.0) {
-      maxx = 180;
-      minx = maxx - width;
-    } else if (lon - width/2.0 < -180) {
-      minx = -180;
-      maxx = minx + width;
-    } else {
-      minx = lon - width/2.0;
-      maxx = lon + width/2.0;
-    }
-
-    double miny = lat;
-    double maxy = lat;
-    if (lat + width/2.0 > 90.0) {
-      maxy = 90;
-      miny = maxy - width;
-    } else if (lat - width/2.0 < -90) {
-      miny = -90;
-      maxy = minx + width;
-    } else {
-      miny = lat - width/2.0;
-      maxy = lat + width/2.0;
-    }
-
-    return minx + "," + miny + "," + maxx + "," + maxy;
   }
 
   private static String getTimeExtent(FeatureService featureService, String fieldName) throws Exception {
