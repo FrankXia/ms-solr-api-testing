@@ -13,12 +13,13 @@ public class GenerateBoundingBox {
   private static void getBoundingBoxWith10kFeatures(String[] args) {
     if (args == null || args.length < 3) {
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.GenerateBoundingBox " +
-          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 259> <width: 180> <height: 90> <Return limit : 10000>}");
+          "<Host Name> <Service Name> <Output File> { <# of bounding boxes: 259> <width: 180> <height: 90> <Return range: 9900,10000>}");
       return;
     }
 
     int port = 9000;
-    int limit = 10000;
+    int limitMax = 10000;
+    int limitMin = 9900;
 
     String host = args[0];
     String name = args[1];
@@ -30,15 +31,21 @@ public class GenerateBoundingBox {
     if (args.length > 3) numBBoxes = Integer.parseInt(args[3]);
     if (args.length > 4) width = Double.parseDouble(args[4]);
     if (args.length > 5) height = Double.parseDouble(args[5]);
-    if (args.length > 6) limit = Integer.parseInt(args[6]);
+    if (args.length > 6) {
+      String[] limits = args[6].split(",");
+      if (limits.length == 2) {
+        limitMin = Integer.parseInt(limits[0]);
+        limitMax = Integer.parseInt(limits[1]);
+      }
+    }
 
     try {
-      BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+      BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true));
 
       int validCount = 0;
       while (validCount < numBBoxes) {
-        String boundingBox = getBbox(host, port, name, limit, width, height, validCount);
-        writer.write(boundingBox);
+        String boundingBox = getBbox(host, port, name, limitMin, limitMax, width, height, validCount);
+        writer.append(boundingBox);
         writer. newLine();
         validCount++;
       }
@@ -73,7 +80,7 @@ public class GenerateBoundingBox {
     return new MinXY(minx, miny);
   }
 
-  static String getBbox(String host, int port, String serviceName, int limit, double initWidth, double initHeight,  int count) {
+  static String getBbox(String host, int port, String serviceName, int limitMin, int limitMax, double initWidth, double initHeight,  int count) {
     String bbox;
     long numFeatures;
     while (true) {
@@ -92,11 +99,12 @@ public class GenerateBoundingBox {
       numFeatures = mapService.getCount("1=1", bbox);
       bbox = bbox + "|" + numFeatures;
 
-      long delta = limit - numFeatures;
+      int limitRange = limitMax - limitMin;
+      long delta = limitMax - numFeatures;
       int loopCount = 0;
 
-      while (Math.abs(delta) > 100 || delta < 0) {
-        double percent = (double) delta / (double) limit;
+      while (Math.abs(delta) > limitRange || delta < 0) {
+        double percent = (double) delta / (double) limitMax;
         System.out.println("# of features: " + numFeatures + ", delta: " + delta + ", loop count: " + loopCount + ", percentage: " + percent + ", bbox: " + bbox);
         if (Math.abs(percent) >= 1) {
           percent = percent > 0 ? 1/2.0 : -1/2.0;
@@ -113,7 +121,7 @@ public class GenerateBoundingBox {
         maxy = (miny + height) % 90.0;
         bbox = minx + "," + miny + "," + maxx + "," + maxy;
         numFeatures = mapService.getCount("1=1", bbox);
-        delta = limit - numFeatures;
+        delta = limitMax - numFeatures;
         bbox = bbox  + "|" + numFeatures;
 
         if (loopCount > 50) {

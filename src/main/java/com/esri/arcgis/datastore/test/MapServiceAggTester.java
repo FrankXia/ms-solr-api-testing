@@ -29,7 +29,7 @@ public class MapServiceAggTester {
     MapService mapService = new MapService(host, port, serviceName, timeoutInSeconds);
     Double[] times = new Double[numCalls];
     for (int index=0; index < numCalls; index++) {
-      String boundingBox = Utils.getBbox(width, height);
+      String boundingBox = Utils.getRandomBoundingBox(width, height);
       long time = mapService.exportMap(boundingBox, 4326, aggStyle);
       times[index] = time * 1.0;
     }

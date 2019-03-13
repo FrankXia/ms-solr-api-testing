@@ -51,7 +51,7 @@ public class Utils {
   }
 
   private static Random random = new Random();
-  static String getBbox(double width, double height) {
+  static String getRandomBoundingBox(double width, double height) {
     double MAX_W = 360;
     double MAX_H = 180;
     double MIN_X = -180;

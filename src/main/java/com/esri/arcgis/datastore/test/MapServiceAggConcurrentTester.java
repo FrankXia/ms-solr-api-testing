@@ -38,7 +38,7 @@ public class MapServiceAggConcurrentTester {
 
   private static void singleTesting(String host, String serviceName, int width, int height, String aggStyle, int timeoutInSeconds) {
     int port = 9000;
-    String boundingBox = Utils.getBbox(width, height);
+    String boundingBox = Utils.getRandomBoundingBox(width, height);
     MapService mapService = new MapService(host, port, serviceName,timeoutInSeconds);
     long time = mapService.exportMap(boundingBox, 4326, aggStyle);
     System.out.println( "Time -> " + time);
@@ -67,7 +67,7 @@ public class MapServiceAggConcurrentTester {
 
       int lineRead = 0;
       while (lineRead < numbConcurrentCalls) {
-        String boundingBox = Utils.getBbox(width, height);
+        String boundingBox = Utils.getRandomBoundingBox(width, height);
         callables.add(createTask(host, port, serviceName, boundingBox, aggStyle, timeoutInSeconds));
         lineRead++;
       }
