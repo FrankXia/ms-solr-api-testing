@@ -11,6 +11,8 @@ public class FeatureServiceTester {
 
   private static SimpleDateFormat simpleDateFormat;
 
+  private static int timeoutInSeconds = 120;
+
   public static void main(String[] args) {
 
     int numParameters = args.length;
@@ -46,7 +48,7 @@ public class FeatureServiceTester {
 
       String boundingBox = (args.length == 5)? args[4] : null;
 
-      FeatureService featureService = new FeatureService(host, serverPort, serviceName);
+      FeatureService featureService = new FeatureService(host, serverPort, serviceName, timeoutInSeconds);
       featureService.doGroupByStats("1=1", groupbyFdName, outStats, boundingBox);
 
     }
@@ -106,7 +108,7 @@ public class FeatureServiceTester {
 
     try {
       for (String table : tableNames) {
-        FeatureService featureService = new FeatureService(hostName, port, table);
+        FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String mTimestamp = getTimeExtent(featureService, timeFieldName);
         String where = getUniqueValuesForIN(featureService, fieldName, isStringField);
         featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(where, boundingBox, mTimestamp);
@@ -123,7 +125,7 @@ public class FeatureServiceTester {
     String fieldName = "ts";
     try {
       for (String table : tableNames) {
-        FeatureService featureService = new FeatureService(hostName, port, table);
+        FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String mTimestamp = getTimeExtent(featureService, fieldName);
         featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent("1=1", boundingBox, mTimestamp);
       }
@@ -139,7 +141,7 @@ public class FeatureServiceTester {
 
     try {
       for (String table : tableNames) {
-        FeatureService featureService = new FeatureService(hostName, port, table);
+        FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String where = getUniqueValuesForIN(featureService, fieldName, isStringField);
         featureService.getFeaturesWithWhereClause(where);
       }
@@ -156,7 +158,7 @@ public class FeatureServiceTester {
     simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     try {
       for (String table : tableNames) {
-        FeatureService featureService = new FeatureService(hostName, port, table);
+        FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String mTimestamp = getTimeExtent(featureService, fieldName);
         featureService.getFeaturesWithTimeExtent("1=1", mTimestamp);
       }
@@ -175,7 +177,7 @@ public class FeatureServiceTester {
     System.out.println("======== get features from each service with a 10 degree random bounding box ========= ");
     String boundingBox = generateBoundingBox(boundingBoxWidth);
     for (String table: tableNames) {
-      FeatureService featureService = new FeatureService(hostName, port, table);
+      FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
       featureService.getFeaturesWithWhereClauseAndBoundingBox("1=1", boundingBox);
     }
   }
@@ -183,7 +185,7 @@ public class FeatureServiceTester {
   private static void testGetFeaturesForAll(String hostName, int port, String[] tableNames) {
     System.out.println("======== get features from each service with a random offset ========= ");
     for (String table: tableNames) {
-      FeatureService featureService = new FeatureService(hostName, port, table);
+      FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
       boolean useOffset =  !table.contains("10k");
       featureService.getFeaturesWithWhereClauseAndRandomOffset("1=1", useOffset);
     }
@@ -192,14 +194,14 @@ public class FeatureServiceTester {
   private static void testTotalCountForAll(String hostName, int port, String[] tableNames) {
     System.out.println("======== get total count for each service ========= ");
     for (String table: tableNames) {
-      FeatureService featureService = new FeatureService(hostName, port, table);
+      FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
       featureService.getCount("1=1");
     }
   }
 
   private static void testWithStatsAsWhereClause(String fieldName, String hostName, int port, String[] tableNames) {
     for (String table: tableNames) {
-      FeatureService featureService = new FeatureService(hostName, port, table);
+      FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
       JSONObject stats = featureService.getStates(fieldName);
       double min = stats.getDouble("min");
       double max = stats.getDouble("max");

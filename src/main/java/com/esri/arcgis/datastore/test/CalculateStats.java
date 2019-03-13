@@ -21,8 +21,8 @@ public class CalculateStats {
       String prefix =  args[2]; //  "Solr request time: ";
       int datastoreRequestRatio = 1;
 
-      if (args.length > 4) {
-        datastoreRequestRatio = Integer.parseInt(args[4]);
+      if (args.length > 3) {
+        datastoreRequestRatio = Integer.parseInt(args[3]);
       }
 
 
@@ -67,10 +67,10 @@ public class CalculateStats {
         } else {
           Double[] valueArray = data.toArray(new Double[0]);
           Arrays.sort(valueArray);
-          computeStatsForSingpleRequestTimeOnly(valueArray, numberRequests);
+          computeStatsForSingleRequestTimeOnly(valueArray, numberRequests);
 
           if (featuresList.size() >= numberRequests) {
-            computeStatsForSingpleRequestTimeOnly(featuresList.toArray(new Double[0]), numberRequests);
+            computeStatsForSingleRequestTimeOnly(featuresList.toArray(new Double[0]), numberRequests);
           }
         }
       } else {
@@ -81,7 +81,7 @@ public class CalculateStats {
     }
   }
 
-  private static void computeStatsForSingpleRequestTimeOnly(Double[] data, int numberRequest) {
+  private static void computeStatsForSingleRequestTimeOnly(Double[] data, int numberRequest) {
     Arrays.sort(data);
     double sum = 0;
     double min = Double.MAX_VALUE;
@@ -136,20 +136,36 @@ public class CalculateStats {
 
         if (numberRequests * datastoreRequestRatio > timeFeatures.size()) {
           System.out.println("Error: " + timeFeatures.size() + " < " + datastoreRequestRatio * numberRequests);
-          Collections.sort(timeFeatures, new SortByFeatures());
           for (int i=0; i < timeFeatures.size(); i++) {
             System.out.println(timeFeatures.get(i).features + " : " + timeFeatures.get(i).time);
           }
         } else {
+          System.out.println("============================== ");
+          Collections.sort(timeFeatures, new SortByFeatures());
+          for (int i=0; i < timeFeatures.size(); i++) {
+            System.out.println(i + " : " + timeFeatures.get(i).features + " - " + timeFeatures.get(i).time);
+          }
+
           int extra = timeFeatures.size() - numberRequests * datastoreRequestRatio;
           if (extra > 0) {
             System.out.println("WARNING: the number of data store requests is greater than concurrent requests of "  + numberRequests + ", " + extra/2);
+
+            Collections.sort(timeFeatures, new SortByTimes());
+            List<TimeFeature> timeFeatures2 = new LinkedList<>();
+            for (int i=extra; i<timeFeatures.size(); i++) timeFeatures2.add(timeFeatures.get(i));
+
+            if (timeFeatures2.size() == numberRequests * datastoreRequestRatio) {
+              timeFeatures = timeFeatures2;
+              extra = timeFeatures.size() - numberRequests * datastoreRequestRatio;
+            }
+            System.out.println("# of features after combining: " + timeFeatures2.size());
           }
+
+          Collections.sort(timeFeatures, new SortByFeatures());
 
           Double[] times = new Double[numberRequests];
           Double[] features = new Double[numberRequests];
           int index = 0;
-          Collections.sort(timeFeatures, new SortByFeatures());
           for (int i=extra; i < timeFeatures.size(); i = i + datastoreRequestRatio) {
             TimeFeature timeFeature1 = timeFeatures.get(i);
             if (datastoreRequestRatio == 1) {
@@ -159,6 +175,7 @@ public class CalculateStats {
               TimeFeature timeFeature2 = timeFeatures.get(i + 1);
               times[index] = timeFeature1.time + timeFeature2.time;
               features[index] = (double) ((timeFeature1.features + timeFeature2.features) / datastoreRequestRatio);
+              System.out.println(i + " " +  times[index] +" , " + timeFeature1.time  + ", " + timeFeature2.time);
             }
             index++;
           }
@@ -189,5 +206,12 @@ class SortByFeatures implements Comparator<TimeFeature> {
 
   public int compare(TimeFeature timeFeature1, TimeFeature timeFeature2) {
     return (int)(timeFeature1.features - timeFeature2.features);
+  }
+}
+
+class SortByTimes implements Comparator<TimeFeature> {
+
+  public int compare(TimeFeature timeFeature1, TimeFeature timeFeature2) {
+    return (int)(timeFeature1.time - timeFeature2.time);
   }
 }

@@ -1,6 +1,7 @@
 package com.esri.arcgis.datastore.test;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -57,11 +58,25 @@ public class FeatureService {
   private boolean returnFullLodGrid = false;
   private String f = "json";
 
-  FeatureService(String host, int port, String serviceName) {
+  private int timeoutInSeconds = 60;
+
+  FeatureService(String host, int port, String serviceName, int timeoutInSeconds) {
     this.host = host;
     this.port = port;
     this.serviceName = serviceName;
     this.outFields = "*";
+
+    RequestConfig.Builder requestBuilder = RequestConfig.custom();
+    requestBuilder.setConnectTimeout(timeoutInSeconds * 1000);
+    requestBuilder.setSocketTimeout(timeoutInSeconds * 1000);
+    requestBuilder.setConnectionRequestTimeout(timeoutInSeconds * 1000);
+
+    HttpClientBuilder builder = HttpClientBuilder.create();
+    builder.setDefaultRequestConfig(requestBuilder.build());
+//    builder.disableAutomaticRetries();
+    httpClient = builder.build();
+
+    this.timeoutInSeconds = timeoutInSeconds;
   }
 
   long getCount(String where) {

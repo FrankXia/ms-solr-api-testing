@@ -9,7 +9,7 @@ public class FeatureServiceWithRandomBBoxTester {
 
   public static void main(String[] args) throws IOException {
     if (args.length < 4) {
-      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithRandomBBoxTester <Host name> <Service name> <Bounding box file name> <Number of tests> ");
+      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithRandomBBoxTester <Host name> <Service name> <Bounding box file name> <Number of tests> {<Timeout in seconds: 120>}");
       System.out.println("Sample: ");
       System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithRandomBBoxTester localhost faa10m  faa10m_es.txt 100");
     } else {
@@ -18,14 +18,16 @@ public class FeatureServiceWithRandomBBoxTester {
       String table = args[1];
       String fileName = args[2];
       int numTests = Integer.parseInt(args[3]);
-      testGetFeaturesWithBoundingBox(host, port, table, fileName, numTests);
+      int timeoutInSeconds = 120;
+      if (args.length > 4) timeoutInSeconds = Integer.parseInt(args[4]);
+      testGetFeaturesWithBoundingBox(host, port, table, fileName, numTests, timeoutInSeconds);
     }
 
   }
 
-  private static void testGetFeaturesWithBoundingBox(String hostName, int port, String tableName, String boundingBoxFileName, int numbTests) throws IOException {
+  private static void testGetFeaturesWithBoundingBox(String hostName, int port, String tableName, String boundingBoxFileName, int numbTests, int timeoutInSeconds) throws IOException {
     System.out.println("======== get features from each service with a random bounding box that contains less than 10k features ========= ");
-    FeatureService featureService = new FeatureService(hostName, port, tableName);
+    FeatureService featureService = new FeatureService(hostName, port, tableName, timeoutInSeconds);
     BufferedReader reader = new BufferedReader(new FileReader(boundingBoxFileName));
     int modNumber = (numbTests < 150) ? 100 : (250 - numbTests);
     int startIndex = (int) (new Random().nextDouble() * modNumber);
