@@ -7,6 +7,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
 
 public class FeatureService {
@@ -18,6 +22,7 @@ public class FeatureService {
   private int port;
   private String serviceName;
   private String keyspace = "esri_ds_data";
+  private Dialect dialect = Dialect.solr;
 
   // 36 parameters
   private String where = "";
@@ -77,6 +82,22 @@ public class FeatureService {
     httpClient = builder.build();
 
     this.timeoutInSeconds = timeoutInSeconds;
+    try{
+      //test PG connection
+      int pgPort = 5432;
+      String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+      Properties properties = new Properties();
+      properties.put("user", "realtime");
+      properties.put("password", "esri.test");
+      Class.forName("org.postgresql.Driver");
+      Connection  connection = DriverManager.getConnection(url, properties);
+      connection.close();
+
+      this.dialect = Dialect.sql;
+    } catch (Exception e){
+      e.printStackTrace();
+      this.dialect = Dialect.solr;
+    }
   }
 
   long getCount(String where) {
@@ -286,7 +307,105 @@ public class FeatureService {
 //
 //  Solr related functions
 //
-  JSONObject getStates(String fieldName) {
+
+  HashMap<String,String> getStats(String fieldName) {
+
+    if(dialect == Dialect.sql){
+      return getPGStats(fieldName);
+    } else {
+      return getSolrStats(fieldName);
+    }
+  }
+
+  List<String> getUniqueValues(String fieldName){
+    if(dialect == Dialect.sql){
+      return getPGUniqueValues(fieldName);
+    } else {
+      return getSolrUniqueValues(fieldName);
+    }
+  }
+
+  List<String> getPGUniqueValues(String fieldName){
+    int pgPort = 5432;
+    String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+    Properties properties = new Properties();
+    properties.put("user", "realtime");
+    properties.put("password", "esri.test");
+
+    Connection connection = null;
+    Statement statement = null;
+    try {
+      Class.forName("org.postgresql.Driver");
+      connection = DriverManager.getConnection(url, properties);
+      statement = connection.createStatement();
+
+      StringBuilder sql = new StringBuilder();
+      sql.append("SELECT distinct(").append(fieldName).append(")").append(" FROM ").append(keyspace).append(".").append(serviceName);
+      ResultSet resultSet = statement.executeQuery(sql.toString());
+
+      List<String> stats = new ArrayList<>();
+      while(resultSet.next()){
+        stats.add(resultSet.getString(1));
+      }
+      return stats;
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+    finally {
+      try{
+        statement.close();
+        connection.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+    return new ArrayList<>();
+  }
+
+
+  HashMap<String, String> getPGStats(String fieldName){
+    int pgPort = 5432;
+    String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+    Properties properties = new Properties();
+    properties.put("user", "realtime");
+    properties.put("password", "esri.test");
+
+    Connection connection = null;
+    Statement statement = null;
+    try {
+      Class.forName("org.postgresql.Driver");
+      connection = DriverManager.getConnection(url, properties);
+      statement = connection.createStatement();
+
+      StringBuilder sql = new StringBuilder();
+      sql.append("SELECT min(").append(fieldName).append(") as min").append(", max(").append(fieldName)
+          .append(") as max FROM ").append(keyspace).append(".").append(serviceName);
+      ResultSet resultSet = statement.executeQuery(sql.toString());
+      if(resultSet.next()){
+        HashMap<String, String> stats = new HashMap<String, String>();
+        stats.put("min", resultSet.getString("min"));
+        stats.put("max", resultSet.getString("max"));
+        return stats;
+      }
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+    finally {
+      try{
+        statement.close();
+        connection.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+    return new HashMap<>();
+  }
+
+
+  HashMap<String, String> getSolrStats(String fieldName) {
+
     int solrPort = 8983;
     HttpClient client = httpClient;
     try {
@@ -297,14 +416,22 @@ public class FeatureService {
       String jsonString = Utils.executeHttpGET(client, url);
 
       JSONObject jsonObject = new JSONObject(jsonString);
-      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+      JSONObject stats = jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+
+      String min = stats.getString("min");
+      String max = stats.getString("max");
+
+      HashMap<String, String> statsMap = new HashMap<>();
+      statsMap.put("min", min);
+      statsMap.put("max", max);
+      return statsMap;
     } catch (Exception ex) {
       ex.printStackTrace();
     }
-    return null;
+    return new HashMap<>();
   }
 
-  List<String> getUniqueValues(String fieldName) {
+  List<String> getSolrUniqueValues(String fieldName) {
     int solrPort = 8983;
     HttpClient client = httpClient;
     List<String> uniqueValues = new LinkedList<String>();
@@ -331,4 +458,8 @@ public class FeatureService {
     return uniqueValues;
   }
 
+}
+
+enum Dialect {
+  sql, solr
 }
