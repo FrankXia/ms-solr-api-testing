@@ -85,7 +85,7 @@ public class FeatureService {
     try{
       //test PG connection
       int pgPort = 5432;
-      String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+      String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
       Properties properties = new Properties();
       properties.put("user", "realtime");
       properties.put("password", "esri.test");
@@ -327,7 +327,7 @@ public class FeatureService {
 
   List<String> getPGUniqueValues(String fieldName){
     int pgPort = 5432;
-    String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+    String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
     Properties properties = new Properties();
     properties.put("user", "realtime");
     properties.put("password", "esri.test");
@@ -366,7 +366,7 @@ public class FeatureService {
 
   HashMap<String, String> getPGStats(String fieldName){
     int pgPort = 5432;
-    String url = "jdbc:postgresql://" + host + ":" + pgPort + "/realtime";
+    String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
     Properties properties = new Properties();
     properties.put("user", "realtime");
     properties.put("password", "esri.test");
