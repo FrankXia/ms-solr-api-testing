@@ -286,7 +286,6 @@ public class FeatureService {
 
   JSONObject getFieldStats(String fieldName) {
     String stats = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}," +
-        "{\"statisticType\":\"avg\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"avg\"}," +
         "{\"statisticType\":\"min\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"min\"}," +
         "{\"statisticType\":\"max\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"max\"}]";
     this.outStatistics = stats;
