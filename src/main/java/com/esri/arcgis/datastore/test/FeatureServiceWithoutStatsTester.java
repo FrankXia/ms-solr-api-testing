@@ -181,7 +181,8 @@ public class FeatureServiceWithoutStatsTester {
         for (String table : tableNames) {
           FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
           String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
-          featureService.getFeaturesWithWhereClause(where);
+          Tuple tuple = featureService.getFeaturesWithWhereClause(where);
+          stats[i] = tuple.requestTime * 1.0;
         }
       }
       Utils.computeStats(stats, numRuns * tableNames.length);
