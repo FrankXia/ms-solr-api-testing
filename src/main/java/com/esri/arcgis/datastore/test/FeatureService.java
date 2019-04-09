@@ -115,7 +115,18 @@ public class FeatureService {
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
     this.time = timeExtent;
-    return getFeatures();
+    return getFeatures(false);
+  }
+
+  Tuple getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtentAndGroupBy(String where, String boundingBox, String timeExtent, int lod, int timeInterval, String timeUnits) {
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    this.geometry = boundingBox;
+    this.time = timeExtent;
+    this.timeInterval = timeInterval + "";
+    this.timeUnit = timeUnits;
+    this.lod = lod + "";
+    return getFeatures(true);
   }
 
   Tuple getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
@@ -128,27 +139,27 @@ public class FeatureService {
     } else {
       this.resultOffset = "0";
     }
-    return getFeatures();
+    return getFeatures(false);
   }
 
   Tuple getFeaturesWithWhereClauseAndBoundingBox(String where, String boundingBox) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
-    return getFeatures();
+    return getFeatures(false);
   }
 
   Tuple getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.time = timeString;
-    return getFeatures();
+    return getFeatures(false);
   }
 
   Tuple getFeaturesWithWhereClause(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
-    return getFeatures();
+    return getFeatures(false);
   }
 
   Tuple doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
@@ -157,10 +168,10 @@ public class FeatureService {
     this.groupByFieldsForStatistics = groupByFdName;
     this.outStatistics = outStats;
     if (boundingBox != null) this.geometry = boundingBox;
-    return getFeatures();
+    return getFeatures(false);
   }
 
-  private Tuple getFeatures() {
+  private Tuple getFeatures(boolean isSpaceTime) {
     long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
@@ -170,15 +181,27 @@ public class FeatureService {
       JSONObject obj = new JSONObject(response);
       if (obj.optJSONObject("error") == null) {
         boolean exceededTransferLimit = obj.optBoolean("exceededTransferLimit");
-        JSONArray features = obj.getJSONArray("features");
-        if (features.length() > 0) {
-          // print a random feature
-          int index  = random.nextInt() % features.length();
-          index = index < 0 ? (-1) * index : index;
-          System.out.println(features.get(index));
+        JSONArray features = null;
+        JSONObject spaceTimeFeatures = null;
+        if (isSpaceTime) {
+          spaceTimeFeatures =  obj.getJSONObject("spaceTimeFeatures");
+          if (spaceTimeFeatures != null) {
+            Map<String, Object> stFeatures = spaceTimeFeatures.toMap();
+            for (String key : stFeatures.keySet()) {
+              System.out.println(key + " -> " + stFeatures.get(key));
+            }
+          }
+        } else {
+          features = obj.getJSONArray("features");
+          if (features.length() > 0) {
+            // print a random feature
+            int index = random.nextInt() % features.length();
+            index = index < 0 ? (-1) * index : index;
+            System.out.println(features.get(index));
+          }
+          numFeatures = features.length();
+          System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
         }
-        numFeatures = features.length();
-        System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
       } else {
         System.out.print("Request failed -> " + response);
       }

@@ -44,6 +44,7 @@ public class FeatureServiceWithoutStatsTester {
       System.out.println("6 -> temporal extent:  time > t1 and time < t2, limit=10,000 for all services ");
       System.out.println("7 -> spatiotemporal extent:  geometry INSIDE bounding box AND time > t1 and time < t2, limit=10,000 for all services ");
       System.out.println("8 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE bounding box AND time > t1 and time < t2, limit=10,000 for all services ");
+      System.out.println("9 -> spatiotemporal extent with attribute group:  flightId IN ('1234', '5678') AND geometry INSIDE bounding box AND time > t1 and time < t2 AND GroupBy One hour limit=10,000 for all services ");
 
       System.out.println("Samples: ");
       System.out.println("java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithoutStatsTester localhost faa10m 0");
@@ -61,6 +62,10 @@ public class FeatureServiceWithoutStatsTester {
           "20 120 35 ts 5 (20 -> runs, 120 -> timeout, 35 -> bounding box width, ts -> time field name, 5 -> time window percentage)");
       System.out.println("java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithoutStatsTester localhost faa10m 8 " +
           "20 120 60 ts 5 orig true (20 -> runs, 120 -> timeout, 60 -> bounding box width, ts -> time field name, 5 -> time window percentage, orig -> unique value field name, true -> is it a string field)");
+      System.out.println("java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceWithoutStatsTester localhost faa10m 9 " +
+          "20 120 60 ts 5 orig true 3 1 hours (20 -> runs, 120 -> timeout, 60 -> bounding box width, ts -> time field name, 5 -> time window percentage, orig -> unique value field name, " +
+          "true -> is it a string field, 3 -> Lod, 1 -> time interval, hours -> time unit)");
+
     } else {
 
       int serverPort = 9000;
@@ -70,35 +75,35 @@ public class FeatureServiceWithoutStatsTester {
       if (args.length > 3) numRuns = Integer.parseInt(args[3]);
       if (args.length > 4) timeoutInSeconds = Integer.parseInt(args[4]);
 
-      if (codes.contains("0")) testTotalCountForAll(hostName, serverPort, tableNames);
-      if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
-      if (codes.contains("2")) {
+      if (codes.equals("0")) testTotalCountForAll(hostName, serverPort, tableNames);
+      if (codes.equals("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
+      if (codes.equals("2")) {
         String fieldName = "speed";
         if (args.length > 5) fieldName = args[5];
         if (args.length > 6) percentage = Double.parseDouble(args[6]) / 100.0;
         testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames, fieldName);
       }
-      if (codes.contains("3")) {
+      if (codes.equals("3")) {
         String uniqueFieldName = "plane_id";
         boolean isUniqueFieldAStringField = false;
         if (args.length > 5) uniqueFieldName = args[5];
         if (args.length > 6) isUniqueFieldAStringField = Boolean.parseBoolean(args[6]);
         testGetFeaturesWithSQLIn(hostName, serverPort, tableNames, uniqueFieldName, isUniqueFieldAStringField);
       }
-      if (codes.contains("4")) {
+      if (codes.equals("4")) {
         double boundingBoxWidth = 25;
         if (args.length > 5) boundingBoxWidth = Double.parseDouble(args[5]);
         testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames, boundingBoxWidth);
       }
-      if (codes.contains("5")) System.out.println("To be implemented!");
+      if (codes.equals("5")) System.out.println("To be implemented!");
 
-      if (codes.contains("6")) {
+      if (codes.equals("6")) {
         String timeFieldName = "ts";
         if (args.length > 5) timeFieldName = args[5];
         if (args.length > 6) percentage = Double.parseDouble(args[6]) / 100.0;
         testGetFeaturesWithTimeExtent(hostName, serverPort, tableNames, timeFieldName);
       }
-      if (codes.contains("7")) {
+      if (codes.equals("7")) {
         double boundingBoxWidth = 35;
         if (args.length > 5) boundingBoxWidth = Double.parseDouble(args[5]);
 
@@ -110,7 +115,7 @@ public class FeatureServiceWithoutStatsTester {
         testGetFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames, boundingBoxWidth, fieldName);
       }
       // if bounding box too small, the table/service may return 0 feature.
-      if (codes.contains("8")) {
+      if (codes.equals("8")) {
         double boundingBoxWidth = 60;
         if (args.length > 5) boundingBoxWidth = Double.parseDouble(args[5]);
 
@@ -127,8 +132,60 @@ public class FeatureServiceWithoutStatsTester {
 
         testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames, boundingBoxWidth, fieldName, isStringField, timeFieldName);
       }
+
+      if (codes.equals("9")) {
+        double boundingBoxWidth = 60;
+        if (args.length > 5) boundingBoxWidth = Double.parseDouble(args[5]);
+
+        String timeFieldName = "ts";
+        if (args.length > 6) timeFieldName = args[6];
+
+        if (args.length > 7) percentage = Double.parseDouble(args[7]) / 100.0;
+
+        String fieldName = "orig";
+        if (args.length > 8) fieldName = args[8];
+
+        boolean isStringField = true;
+        if (args.length > 9) isStringField = Boolean.parseBoolean(args[9]);
+
+        int lod = 3;
+        if (args.length > 10) lod = Integer.parseInt(args[10]);
+
+        int timeInterval = 1;
+        if (args.length > 11) timeInterval = Integer.parseInt(args[11]);
+
+        String timeUnits = "hours";
+        if (args.length > 12) timeUnits = args[12];
+
+        testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN_GroupBy(hostName, serverPort, tableNames, boundingBoxWidth, fieldName, isStringField, timeFieldName, lod, timeInterval, timeUnits);
+      }
     }
   }
+
+  private static void testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN_GroupBy(
+      String hostName, int port, String[] tableNames, double boundingBoxWidth, String uniqueFieldName, boolean isStringField,
+      String timeStampFieldName, int lod, int timeInterval, String timeUnits) {
+    System.out.println("======== get features from each service with a 10 degree random bounding box and time extent and IN parameter with Group By ========= ");
+    String boundingBox = Utils.getRandomBoundingBox(boundingBoxWidth, boundingBoxWidth/2);
+    Random random = new Random();
+
+    try {
+      Double[] stats = new Double[numRuns];
+      for (int i=0; i<numRuns; i++) {
+        for (String table : tableNames) {
+          FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
+          String mTimestamp = getTimeExtent(featureService, timeStampFieldName, random);
+          String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
+          Tuple tuple = featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtentAndGroupBy(where, boundingBox, mTimestamp, lod, timeInterval, timeUnits);
+          stats[i] = tuple.requestTime * 1.0;
+        }
+      }
+      Utils.computeStats(stats, numRuns * tableNames.length);
+    }catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
 
   private static void testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(String hostName, int port, String[] tableNames, double boundingBoxWidth, String uniqueFieldName, boolean isStringField, String timeStampFieldName) {
     System.out.println("======== get features from each service with a 10 degree random bounding box and time extent and IN parameter ========= ");
