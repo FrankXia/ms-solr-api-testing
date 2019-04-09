@@ -176,11 +176,15 @@ public class FeatureServiceWithoutStatsTester {
   private static void testGetFeaturesWithSQLIn(String hostName, int port, String[] tableNames, String uniqueFieldName, boolean isStringField) {
     System.out.println("======== get features from each service with sSQL IN (xxx,xxx) ========= ");
     try {
-      for (String table : tableNames) {
-        FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
-        String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
-        featureService.getFeaturesWithWhereClause(where);
+      Double[] stats = new Double[numRuns];
+      for (int i=0; i<numRuns; i++) {
+        for (String table : tableNames) {
+          FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
+          String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
+          featureService.getFeaturesWithWhereClause(where);
+        }
       }
+      Utils.computeStats(stats, numRuns * tableNames.length);
     } catch (Exception ex) {
       ex.printStackTrace();
     }
