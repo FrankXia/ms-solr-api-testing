@@ -202,7 +202,7 @@ public class FeatureServiceTester {
   private static void testWithStatsAsWhereClause(String fieldName, String hostName, int port, String[] tableNames) {
     for (String table: tableNames) {
       FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
-      JSONObject stats = featureService.getStates(fieldName);
+      JSONObject stats = featureService.getFieldStats(fieldName);
       double min = stats.getDouble("min");
       double max = stats.getDouble("max");
 //      double random = new Random().nextDouble() * (max - min);
@@ -214,7 +214,7 @@ public class FeatureServiceTester {
   }
 
   private static String getTimeExtent(FeatureService featureService, String fieldName) throws Exception {
-    JSONObject stats = featureService.getStates(fieldName);
+    JSONObject stats = featureService.getFieldStats(fieldName);
     String minTimestamp = stats.getString("min").replace("T", " ").replace("Z", "");
     String maxTimestamp = stats.getString("max").replace("T", " ").replace("Z", "");
     long min = simpleDateFormat.parse(minTimestamp).getTime();
@@ -229,7 +229,7 @@ public class FeatureServiceTester {
   private static String getUniqueValuesForIN(FeatureService featureService, String fieldName, boolean isStringField) throws Exception {
     Random random = new Random();
 
-    List<String> uniqueValues = featureService.getUniqueValues(fieldName);
+    List<String> uniqueValues = featureService.getFieldUniqueValues(fieldName);
     if (uniqueValues.size() == 0) throw new Exception("No unique values found!");
     if (uniqueValues.size() == 1) throw new Exception("Only have one value.");
     String uniqueValue1 = uniqueValues.get(0);

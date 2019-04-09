@@ -79,22 +79,23 @@ public class FeatureService {
     this.timeoutInSeconds = timeoutInSeconds;
   }
 
-  long getCount(String where) {
+  Tuple getCount(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     return getCount();
   }
 
-  long getCount(String where, String boundingBox) {
+  Tuple getCount(String where, String boundingBox) {
     resetParameters2InitialValues();
     this.geometry = boundingBox;
     this.where = where == null? "" : where.trim();
     return getCount();
   }
 
-  private long getCount() {
+  Tuple getCount() {
     this.returnCountOnly = true;
     long totalCount = 0L;
+    long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
     if (response != null) {
@@ -106,18 +107,18 @@ public class FeatureService {
         System.out.print("Request failed -> " + response);
       }
     }
-    return totalCount;
+    return new Tuple(System.currentTimeMillis() - start, totalCount);
   }
 
-  void getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(String where, String boundingBox, String timeExtent) {
+  Tuple getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(String where, String boundingBox, String timeExtent) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
     this.time = timeExtent;
-    getFeatures();
+    return getFeatures();
   }
 
-  void getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
+  Tuple getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     // add random number of records skipped
@@ -127,27 +128,27 @@ public class FeatureService {
     } else {
       this.resultOffset = "0";
     }
-    getFeatures();
+    return getFeatures();
   }
 
-  void getFeaturesWithWhereClauseAndBoundingBox(String where, String boundingBox) {
+  Tuple getFeaturesWithWhereClauseAndBoundingBox(String where, String boundingBox) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
-    getFeatures();
+    return getFeatures();
   }
 
-  void getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
+  Tuple getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.time = timeString;
-    getFeatures();
+    return getFeatures();
   }
 
-  void getFeaturesWithWhereClause(String where) {
+  Tuple getFeaturesWithWhereClause(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
-    getFeatures();
+    return getFeatures();
   }
 
   Tuple doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
@@ -273,9 +274,9 @@ public class FeatureService {
     try {
       String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/FeatureServer/0/query?" + queryParameters;
       System.out.println(url);
-      long start = System.currentTimeMillis();
+      //long start = System.currentTimeMillis();
       String result = Utils.executeHttpGET(client, url);
-      System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
+      //System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
       return result;
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -283,52 +284,86 @@ public class FeatureService {
     return null;
   }
 
+  JSONObject getFieldStats(String fieldName) {
+    String stats = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}," +
+        "{\"statisticType\":\"avg\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"avg\"}," +
+        "{\"statisticType\":\"min\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"min\"}," +
+        "{\"statisticType\":\"max\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"max\"}]";
+    this.outStatistics = stats;
+    this.where = "1=1";
+    //long start = System.currentTimeMillis();
+    String queryParameters = composeGetRequestQueryParameters();
+    String response = executeRequest(queryParameters);
+    JSONObject jsonObject = new JSONObject(response);
+    System.out.println(response);
+    JSONObject f = jsonObject.getJSONArray("features").getJSONObject(0);
+    return f.getJSONObject("attributes");
+  }
+
+  List<String> getFieldUniqueValues(String fieldName) {
+    List<String> uniqueValues = new LinkedList<String>();
+
+    this.groupByFieldsForStatistics = fieldName;
+    this.outStatistics = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}]";
+    this.where = "1=1";
+    String queryParameters = composeGetRequestQueryParameters();
+    String response = executeRequest(queryParameters);
+    JSONObject jsonObject = new JSONObject(response);
+    JSONArray features = jsonObject.getJSONArray("features");
+    for (int i=0; i<features.length(); i++) {
+      JSONObject f = features.getJSONObject(i);
+      uniqueValues.add(f.getJSONObject("attributes").getString(fieldName));
+    }
+    System.out.println(response);
+    return uniqueValues;
+  }
+
 //
 //  Solr related functions
 //
-  JSONObject getStates(String fieldName) {
-    int solrPort = 8983;
-    HttpClient client = httpClient;
-    try {
-      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
-      System.out.println(url);
-
-      String jsonString = Utils.executeHttpGET(client, url);
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return null;
-  }
-
-  List<String> getUniqueValues(String fieldName) {
-    int solrPort = 8983;
-    HttpClient client = httpClient;
-    List<String> uniqueValues = new LinkedList<String>();
-    try {
-      int maxReturns = 100;
-      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
-      System.out.println(url);
-      System.out.println(url.substring(90));
-
-      String jsonString = Utils.executeHttpGET(client, url);
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
-
-      for (int i=0; i<buckets.length(); i++) {
-        JSONObject bucket = buckets.getJSONObject(i);
-        String key = bucket.get("val").toString();
-        uniqueValues.add(key);
-      }
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return uniqueValues;
-  }
+//  JSONObject getStates(String fieldName) {
+//    int solrPort = 8983;
+//    HttpClient client = httpClient;
+//    try {
+//      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
+//      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
+//      System.out.println(url);
+//
+//      String jsonString = Utils.executeHttpGET(client, url);
+//
+//      JSONObject jsonObject = new JSONObject(jsonString);
+//      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+//    } catch (Exception ex) {
+//      ex.printStackTrace();
+//    }
+//    return null;
+//  }
+//
+//  List<String> getUniqueValues(String fieldName) {
+//    int solrPort = 8983;
+//    HttpClient client = httpClient;
+//    List<String> uniqueValues = new LinkedList<String>();
+//    try {
+//      int maxReturns = 100;
+//      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
+//      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
+//      System.out.println(url);
+//      System.out.println(url.substring(90));
+//
+//      String jsonString = Utils.executeHttpGET(client, url);
+//
+//      JSONObject jsonObject = new JSONObject(jsonString);
+//      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
+//
+//      for (int i=0; i<buckets.length(); i++) {
+//        JSONObject bucket = buckets.getJSONObject(i);
+//        String key = bucket.get("val").toString();
+//        uniqueValues.add(key);
+//      }
+//    } catch (Exception ex) {
+//      ex.printStackTrace();
+//    }
+//    return uniqueValues;
+//  }
 
 }
