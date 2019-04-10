@@ -3,7 +3,6 @@ package com.esri.arcgis.datastore.test;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
@@ -13,16 +12,8 @@ public class FeatureServiceTester {
   private static SimpleDateFormat simpleDateFormat;
 
   private static int timeoutInSeconds = 120;
-  private static String hostName = "localhost";
-  private static int port = 9000;
 
   public static void main(String[] args) {
-
-    if(args[0].contains(":")){
-      String[] hostAndPort = args[0].split(":");
-      hostName = hostAndPort[0];
-      port = Integer.parseInt(hostAndPort[1]);
-    }
 
     int numParameters = args.length;
     if (numParameters == 3) {
@@ -40,7 +31,7 @@ public class FeatureServiceTester {
   private static void testVariousRequestsWithStats(String[] args) {
 
     if (args.length < 4) {
-      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceTester <Host name | Host Name:Port> <Service name> <Group By field name> <Out statistics> {<Bounding Box>}");
+      System.out.println("Usage: java -cp ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceTester <Host name> <Service name> <Group By field name> <Out statistics> {<Bounding Box>}");
       System.out.println("Sample:");
       System.out.println("   java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceTester localhost faa30m dest \"[" +
           "{\\\"statisticType\\\":\\\"avg\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"avg_speed\\\"}," +
@@ -48,7 +39,8 @@ public class FeatureServiceTester {
           "{\\\"statisticType\\\":\\\"max\\\",\\\"onStatisticField\\\":\\\"speed\\\",\\\"outStatisticFieldName\\\":\\\"max_speed\\\"}" +
           "]\"");
     } else {
-
+      int serverPort = 9000;
+      String host = args[0];
       String serviceName = args[1];
       String groupbyFdName = args[2];
       String outStats = args[3];
@@ -56,7 +48,7 @@ public class FeatureServiceTester {
 
       String boundingBox = (args.length == 5)? args[4] : null;
 
-      FeatureService featureService = new FeatureService(hostName, port, serviceName, timeoutInSeconds);
+      FeatureService featureService = new FeatureService(host, serverPort, serviceName, timeoutInSeconds);
       featureService.doGroupByStats("1=1", groupbyFdName, outStats, boundingBox);
 
     }
@@ -82,26 +74,26 @@ public class FeatureServiceTester {
       System.out.println("java -cp  ./ms-query-api-performance-1.0-jar-with-dependencies.jar com.esri.arcgis.datastore.test.FeatureServiceTester localhost faa10m 1,2,3");
     } else {
 
-
-
-      String[] tableNames = args[1].contains(",") ? args[1].split(",") : new String[]{args[1]}; // new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m", "faa30m", "faa300m"};
+      int serverPort = 9000;
+      String[] tableNames = new String[]{args[1]}; // new String[]{"faa10k", "faa100k", "faa1m", "faa3m", "faa5m", "faa10m", "faa30m", "faa300m"};
 
       String pattern = "yyyy-MM-dd HH:mm:ss";
       simpleDateFormat = new SimpleDateFormat(pattern);
       simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+      String hostName = args[0];
       String codes = args[2];
-      if (codes.contains("0")) testTotalCountForAll(hostName, port, tableNames);
-      if (codes.contains("1")) testGetFeaturesForAll(hostName, port, tableNames);
-      if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, port, tableNames);
-      if (codes.contains("3")) testGetFeaturesWithSQLIn(hostName, port, tableNames);
-      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, port, tableNames, 20);
+      if (codes.contains("0")) testTotalCountForAll(hostName, serverPort, tableNames);
+      if (codes.contains("1")) testGetFeaturesForAll(hostName, serverPort, tableNames);
+      if (codes.contains("2")) testGetFeaturesWithSpeedRange(hostName, serverPort, tableNames);
+      if (codes.contains("3")) testGetFeaturesWithSQLIn(hostName, serverPort, tableNames);
+      if (codes.contains("4")) testGetFeaturesWithBoundingBox(hostName, serverPort, tableNames, 20);
       if (codes.contains("5")) System.out.println("To be implemented!");
 
-      if (codes.contains("6")) testGetFeaturesWithTimeExtent(hostName, port, tableNames);
-      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, port, tableNames, 35);
+      if (codes.contains("6")) testGetFeaturesWithTimeExtent(hostName, serverPort, tableNames);
+      if (codes.contains("7")) testGFeaturesWithBoundingBoxAndTimeExtent(hostName, serverPort, tableNames, 35);
       // if bounding box too small, the table/service may return 0 feature.
-      if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, port, tableNames, 60);
+      if (codes.contains("8")) testGFeaturesWithBoundingBoxAndTimeExtentAndSQLIN(hostName, serverPort, tableNames, 60);
     }
   }
 
@@ -210,9 +202,9 @@ public class FeatureServiceTester {
   private static void testWithStatsAsWhereClause(String fieldName, String hostName, int port, String[] tableNames) {
     for (String table: tableNames) {
       FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
-      HashMap<String, String> stats = featureService.getStats(fieldName);
-      double min = Double.parseDouble(stats.get("min"));
-      double max = Double.parseDouble(stats.get("max"));
+      JSONObject stats = featureService.getFieldStats(fieldName);
+      double min = stats.getDouble("min");
+      double max = stats.getDouble("max");
 //      double random = new Random().nextDouble() * (max - min);
 //      random = random < 0 ? random * (-1) : random;
       double random = 0.5 * (max - min);
@@ -222,9 +214,9 @@ public class FeatureServiceTester {
   }
 
   private static String getTimeExtent(FeatureService featureService, String fieldName) throws Exception {
-    HashMap<String, String> stats = featureService.getStats(fieldName);
-    String minTimestamp = stats.get("min").replace("T", " ").replace("Z", "");
-    String maxTimestamp = stats.get("max").replace("T", " ").replace("Z", "");
+    JSONObject stats = featureService.getFieldStats(fieldName);
+    String minTimestamp = stats.getString("min").replace("T", " ").replace("Z", "");
+    String maxTimestamp = stats.getString("max").replace("T", " ").replace("Z", "");
     long min = simpleDateFormat.parse(minTimestamp).getTime();
     long max = simpleDateFormat.parse(maxTimestamp).getTime();
 //    double random = new Random().nextDouble() * (max - min);
@@ -237,7 +229,7 @@ public class FeatureServiceTester {
   private static String getUniqueValuesForIN(FeatureService featureService, String fieldName, boolean isStringField) throws Exception {
     Random random = new Random();
 
-    List<String> uniqueValues = featureService.getUniqueValues(fieldName);
+    List<String> uniqueValues = featureService.getFieldUniqueValues(fieldName);
     if (uniqueValues.size() == 0) throw new Exception("No unique values found!");
     if (uniqueValues.size() == 1) throw new Exception("Only have one value.");
     String uniqueValue1 = uniqueValues.get(0);

@@ -7,10 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.*;
 
 public class FeatureService {
@@ -22,7 +18,6 @@ public class FeatureService {
   private int port;
   private String serviceName;
   private String keyspace = "esri_ds_data";
-  private Dialect dialect = Dialect.solr;
 
   // 36 parameters
   private String where = "";
@@ -82,40 +77,25 @@ public class FeatureService {
     httpClient = builder.build();
 
     this.timeoutInSeconds = timeoutInSeconds;
-    try{
-      //test PG connection
-      int pgPort = 5432;
-      String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
-      Properties properties = new Properties();
-      properties.put("user", "realtime");
-      properties.put("password", "esri.test");
-      Class.forName("org.postgresql.Driver");
-      Connection  connection = DriverManager.getConnection(url, properties);
-      connection.close();
-
-      this.dialect = Dialect.sql;
-    } catch (Exception e){
-      e.printStackTrace();
-      this.dialect = Dialect.solr;
-    }
   }
 
-  long getCount(String where) {
+  Tuple getCount(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     return getCount();
   }
 
-  long getCount(String where, String boundingBox) {
+  Tuple getCount(String where, String boundingBox) {
     resetParameters2InitialValues();
     this.geometry = boundingBox;
     this.where = where == null? "" : where.trim();
     return getCount();
   }
 
-  private long getCount() {
+  Tuple getCount() {
     this.returnCountOnly = true;
     long totalCount = 0L;
+    long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
     if (response != null) {
@@ -127,18 +107,29 @@ public class FeatureService {
         System.out.print("Request failed -> " + response);
       }
     }
-    return totalCount;
+    return new Tuple(System.currentTimeMillis() - start, totalCount);
   }
 
-  void getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(String where, String boundingBox, String timeExtent) {
+  Tuple getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(String where, String boundingBox, String timeExtent) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
     this.time = timeExtent;
-    getFeatures();
+    return getFeatures(false);
   }
 
-  void getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
+  Tuple getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtentAndGroupBy(String where, String boundingBox, String timeExtent, int lod, int timeInterval, String timeUnits) {
+    resetParameters2InitialValues();
+    this.where = where == null? "" : where.trim();
+    this.geometry = boundingBox;
+    this.time = timeExtent;
+    this.timeInterval = timeInterval + "";
+    this.timeUnit = timeUnits;
+    this.lod = lod + "";
+    return getFeatures(true);
+  }
+
+  Tuple getFeaturesWithWhereClauseAndRandomOffset(String where, boolean takeOffset) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     // add random number of records skipped
@@ -148,27 +139,27 @@ public class FeatureService {
     } else {
       this.resultOffset = "0";
     }
-    getFeatures();
+    return getFeatures(false);
   }
 
-  void getFeaturesWithWhereClauseAndBoundingBox(String where, String boundingBox) {
+  Tuple getFeaturesWithWhereClauseAndBoundingBox(String where, String boundingBox) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.geometry = boundingBox;
-    getFeatures();
+    return getFeatures(false);
   }
 
-  void getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
+  Tuple getFeaturesWithTimeExtent(String where, String timeString) { // such as 1547480515000, 1547480615000
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
     this.time = timeString;
-    getFeatures();
+    return getFeatures(false);
   }
 
-  void getFeaturesWithWhereClause(String where) {
+  Tuple getFeaturesWithWhereClause(String where) {
     resetParameters2InitialValues();
     this.where = where == null? "" : where.trim();
-    getFeatures();
+    return getFeatures(false);
   }
 
   Tuple doGroupByStats(String where, String groupByFdName, String outStats, String boundingBox) {
@@ -177,10 +168,10 @@ public class FeatureService {
     this.groupByFieldsForStatistics = groupByFdName;
     this.outStatistics = outStats;
     if (boundingBox != null) this.geometry = boundingBox;
-    return getFeatures();
+    return getFeatures(false);
   }
 
-  private Tuple getFeatures() {
+  private Tuple getFeatures(boolean isSpaceTime) {
     long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
@@ -190,15 +181,27 @@ public class FeatureService {
       JSONObject obj = new JSONObject(response);
       if (obj.optJSONObject("error") == null) {
         boolean exceededTransferLimit = obj.optBoolean("exceededTransferLimit");
-        JSONArray features = obj.getJSONArray("features");
-        if (features.length() > 0) {
-          // print a random feature
-          int index  = random.nextInt() % features.length();
-          index = index < 0 ? (-1) * index : index;
-          System.out.println(features.get(index));
+        JSONArray features = null;
+        JSONObject spaceTimeFeatures = null;
+        if (isSpaceTime) {
+          spaceTimeFeatures =  obj.getJSONObject("spaceTimeFeatures");
+          if (spaceTimeFeatures != null) {
+            Map<String, Object> stFeatures = spaceTimeFeatures.toMap();
+            for (String key : stFeatures.keySet()) {
+              System.out.println(key + " -> " + stFeatures.get(key));
+            }
+          }
+        } else {
+          features = obj.getJSONArray("features");
+          if (features.length() > 0) {
+            // print a random feature
+            int index = random.nextInt() % features.length();
+            index = index < 0 ? (-1) * index : index;
+            System.out.println(features.get(index));
+          }
+          numFeatures = features.length();
+          System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
         }
-        numFeatures = features.length();
-        System.out.println("# of features returned: " + features.length() + ", exceededTransferLimit: " + exceededTransferLimit + ", offset: " + this.resultOffset);
       } else {
         System.out.print("Request failed -> " + response);
       }
@@ -294,9 +297,9 @@ public class FeatureService {
     try {
       String url = "http://" + host + ":" + port + "/arcgis/rest/services/" + serviceName + "/FeatureServer/0/query?" + queryParameters;
       System.out.println(url);
-      long start = System.currentTimeMillis();
+      //long start = System.currentTimeMillis();
       String result = Utils.executeHttpGET(client, url);
-      System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
+      //System.out.println("======> Total request time: " + (System.currentTimeMillis() - start)  + " ms, service name: " + serviceName);
       return result;
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -304,162 +307,85 @@ public class FeatureService {
     return null;
   }
 
-//
-//  Solr related functions
-//
-
-  HashMap<String,String> getStats(String fieldName) {
-
-    if(dialect == Dialect.sql){
-      return getPGStats(fieldName);
-    } else {
-      return getSolrStats(fieldName);
-    }
+  JSONObject getFieldStats(String fieldName) {
+    String stats = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}," +
+        "{\"statisticType\":\"min\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"min\"}," +
+        "{\"statisticType\":\"max\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"max\"}]";
+    this.outStatistics = stats;
+    this.where = "1=1";
+    //long start = System.currentTimeMillis();
+    String queryParameters = composeGetRequestQueryParameters();
+    String response = executeRequest(queryParameters);
+    JSONObject jsonObject = new JSONObject(response);
+    System.out.println(response);
+    JSONObject f = jsonObject.getJSONArray("features").getJSONObject(0);
+    return f.getJSONObject("attributes");
   }
 
-  List<String> getUniqueValues(String fieldName){
-    if(dialect == Dialect.sql){
-      return getPGUniqueValues(fieldName);
-    } else {
-      return getSolrUniqueValues(fieldName);
-    }
-  }
-
-  List<String> getPGUniqueValues(String fieldName){
-    int pgPort = 5432;
-    String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
-    Properties properties = new Properties();
-    properties.put("user", "realtime");
-    properties.put("password", "esri.test");
-
-    Connection connection = null;
-    Statement statement = null;
-    try {
-      Class.forName("org.postgresql.Driver");
-      connection = DriverManager.getConnection(url, properties);
-      statement = connection.createStatement();
-
-      StringBuilder sql = new StringBuilder();
-      sql.append("SELECT distinct(").append(fieldName).append(")").append(" FROM ").append(keyspace).append(".").append(serviceName);
-      ResultSet resultSet = statement.executeQuery(sql.toString());
-
-      List<String> stats = new ArrayList<>();
-      while(resultSet.next()){
-        stats.add(resultSet.getString(1));
-      }
-      return stats;
-    }
-    catch (Exception e){
-      e.printStackTrace();
-    }
-    finally {
-      try{
-        statement.close();
-        connection.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-    return new ArrayList<>();
-  }
-
-
-  HashMap<String, String> getPGStats(String fieldName){
-    int pgPort = 5432;
-    String url = "jdbc:postgresql://a21:" + pgPort + "/realtime";
-    Properties properties = new Properties();
-    properties.put("user", "realtime");
-    properties.put("password", "esri.test");
-
-    Connection connection = null;
-    Statement statement = null;
-    try {
-      Class.forName("org.postgresql.Driver");
-      connection = DriverManager.getConnection(url, properties);
-      statement = connection.createStatement();
-
-      StringBuilder sql = new StringBuilder();
-      sql.append("SELECT min(").append(fieldName).append(") as min").append(", max(").append(fieldName)
-          .append(") as max FROM ").append(keyspace).append(".").append(serviceName);
-      ResultSet resultSet = statement.executeQuery(sql.toString());
-      if(resultSet.next()){
-        HashMap<String, String> stats = new HashMap<String, String>();
-        stats.put("min", resultSet.getString("min"));
-        stats.put("max", resultSet.getString("max"));
-        return stats;
-      }
-    }
-    catch (Exception e){
-      e.printStackTrace();
-    }
-    finally {
-      try{
-        statement.close();
-        connection.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-    return new HashMap<>();
-  }
-
-
-  HashMap<String, String> getSolrStats(String fieldName) {
-
-    int solrPort = 8983;
-    HttpClient client = httpClient;
-    try {
-      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
-      System.out.println(url);
-
-      String jsonString = Utils.executeHttpGET(client, url);
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      JSONObject stats = jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
-
-      String min = stats.getString("min");
-      String max = stats.getString("max");
-
-      HashMap<String, String> statsMap = new HashMap<>();
-      statsMap.put("min", min);
-      statsMap.put("max", max);
-      return statsMap;
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return new HashMap<>();
-  }
-
-  List<String> getSolrUniqueValues(String fieldName) {
-    int solrPort = 8983;
-    HttpClient client = httpClient;
+  List<String> getFieldUniqueValues(String fieldName) {
     List<String> uniqueValues = new LinkedList<String>();
-    try {
-      int maxReturns = 100;
-      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
-      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
-      System.out.println(url);
-      System.out.println(url.substring(90));
 
-      String jsonString = Utils.executeHttpGET(client, url);
-
-      JSONObject jsonObject = new JSONObject(jsonString);
-      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
-
-      for (int i=0; i<buckets.length(); i++) {
-        JSONObject bucket = buckets.getJSONObject(i);
-        String key = bucket.get("val").toString();
-        uniqueValues.add(key);
-      }
-    } catch (Exception ex) {
-      ex.printStackTrace();
+    this.groupByFieldsForStatistics = fieldName;
+    this.outStatistics = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}]";
+    this.where = "1=1";
+    String queryParameters = composeGetRequestQueryParameters();
+    String response = executeRequest(queryParameters);
+    JSONObject jsonObject = new JSONObject(response);
+    JSONArray features = jsonObject.getJSONArray("features");
+    for (int i=0; i<features.length(); i++) {
+      JSONObject f = features.getJSONObject(i);
+      uniqueValues.add(f.getJSONObject("attributes").getString(fieldName));
     }
+    System.out.println(response);
     return uniqueValues;
   }
 
-}
+//
+//  Solr related functions
+//
+//  JSONObject getStates(String fieldName) {
+//    int solrPort = 8983;
+//    HttpClient client = httpClient;
+//    try {
+//      String queryString = "q=*:*&useFieldCache=true&stats=true&stats.field=" + fieldName + "&wt=json&rows=0";
+//      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString;
+//      System.out.println(url);
+//
+//      String jsonString = Utils.executeHttpGET(client, url);
+//
+//      JSONObject jsonObject = new JSONObject(jsonString);
+//      return jsonObject.getJSONObject("stats").getJSONObject("stats_fields").getJSONObject(fieldName);
+//    } catch (Exception ex) {
+//      ex.printStackTrace();
+//    }
+//    return null;
+//  }
+//
+//  List<String> getUniqueValues(String fieldName) {
+//    int solrPort = 8983;
+//    HttpClient client = httpClient;
+//    List<String> uniqueValues = new LinkedList<String>();
+//    try {
+//      int maxReturns = 100;
+//      String queryString = "q=*:*&useFieldCache=true&json.facet={" + fieldName + ":{type:terms,field:" + fieldName + ",limit:" + maxReturns + "}}&wt=json&rows=0";
+//      String url = "http://" + host + ":" + solrPort + "/solr/" + keyspace +"." + serviceName + "/select?" + queryString.replaceAll("[{]", "%7B").replaceAll("[}]", "%7D");
+//      System.out.println(url);
+//      System.out.println(url.substring(90));
+//
+//      String jsonString = Utils.executeHttpGET(client, url);
+//
+//      JSONObject jsonObject = new JSONObject(jsonString);
+//      JSONArray buckets = jsonObject.getJSONObject("facets").getJSONObject(fieldName).getJSONArray("buckets");
+//
+//      for (int i=0; i<buckets.length(); i++) {
+//        JSONObject bucket = buckets.getJSONObject(i);
+//        String key = bucket.get("val").toString();
+//        uniqueValues.add(key);
+//      }
+//    } catch (Exception ex) {
+//      ex.printStackTrace();
+//    }
+//    return uniqueValues;
+//  }
 
-enum Dialect {
-  sql, solr
 }

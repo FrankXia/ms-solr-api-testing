@@ -149,6 +149,8 @@ public class Utils {
       if (stat < min) min = stat;
       if (stat > max) max = stat;
       squaredValue += stat * stat;
+
+      System.out.println(stat);
     }
 
     double avg = sum / numberRequest;

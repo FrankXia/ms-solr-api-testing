@@ -110,7 +110,7 @@ public class MapService {
   }
 
 
-  long getCount(String where, String boundingBox) {
+  Tuple getCount(String where, String boundingBox) {
     FeatureService featureService = new FeatureService(host, port, serviceName, timeoutInSeconds);
     return featureService.getCount(where, boundingBox);
   }

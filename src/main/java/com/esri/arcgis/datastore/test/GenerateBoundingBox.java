@@ -96,7 +96,7 @@ public class GenerateBoundingBox {
 
       bbox = minx +"," + miny + "," +maxx+","+maxy;
       MapService mapService = new MapService(host, port, serviceName, 100);
-      numFeatures = mapService.getCount("1=1", bbox);
+      numFeatures = mapService.getCount("1=1", bbox).returnedFeatures;
       bbox = bbox + "|" + numFeatures;
 
       int limitRange = limitMax - limitMin;
@@ -120,7 +120,7 @@ public class GenerateBoundingBox {
         maxx = (minx + width) % 180.0;
         maxy = (miny + height) % 90.0;
         bbox = minx + "," + miny + "," + maxx + "," + maxy;
-        numFeatures = mapService.getCount("1=1", bbox);
+        numFeatures = mapService.getCount("1=1", bbox).returnedFeatures;
         delta = limitMax - numFeatures;
         bbox = bbox  + "|" + numFeatures;
 
