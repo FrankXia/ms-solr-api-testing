@@ -308,7 +308,7 @@ public class FeatureService {
   }
 
   JSONObject getFieldStats(String fieldName) {
-    String stats = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}," +
+    String stats = "[" +
         "{\"statisticType\":\"min\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"min\"}," +
         "{\"statisticType\":\"max\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"max\"}]";
     this.outStatistics = stats;
@@ -325,9 +325,13 @@ public class FeatureService {
   List<String> getFieldUniqueValues(String fieldName) {
     List<String> uniqueValues = new LinkedList<String>();
 
-    this.groupByFieldsForStatistics = fieldName;
-    this.outStatistics = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}]";
+    //this.groupByFieldsForStatistics = fieldName;
+    //this.outStatistics = "[{\"statisticType\":\"count\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"count\"}]";
     this.where = "1=1";
+    this.returnDistinctValues = true;
+    this.outFields = fieldName;
+    this.resultRecordCount = 100000;
+    this.orderByFields = fieldName;
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
     JSONObject jsonObject = new JSONObject(response);
