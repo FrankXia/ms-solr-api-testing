@@ -174,9 +174,9 @@ public class FeatureServiceWithoutStatsTester {
       for (String table : tableNames) {
         FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String mTimestamp = getTimeExtent(featureService, timeStampFieldName, random);
-        String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
+        List<String> uniqueValues = featureService.getFieldUniqueValues(uniqueFieldName);
         for (int i=0; i<numRuns; i++) {
-
+          String where = getTwoUniqueValuesForIN(uniqueValues, uniqueFieldName, isStringField);
           Tuple tuple = featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtentAndGroupBy(where, boundingBox, mTimestamp, lod, timeInterval, timeUnits);
           stats[i] = tuple.requestTime * 1.0;
         }
@@ -198,8 +198,10 @@ public class FeatureServiceWithoutStatsTester {
       for (String table : tableNames) {
         FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
         String mTimestamp = getTimeExtent(featureService, timeStampFieldName, random);
-        String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
+        List<String> uniqueValues = featureService.getFieldUniqueValues(uniqueFieldName);
+
         for (int i=0; i<numRuns; i++) {
+          String where = getTwoUniqueValuesForIN(uniqueValues, uniqueFieldName, isStringField);
           Tuple tuple = featureService.getFeaturesWithWhereClauseAndBoundingBoxAndTimeExtent(where, boundingBox, mTimestamp);
           stats[i] = tuple.requestTime * 1.0;
         }
@@ -239,9 +241,11 @@ public class FeatureServiceWithoutStatsTester {
 
       for (String table : tableNames) {
         FeatureService featureService = new FeatureService(hostName, port, table, timeoutInSeconds);
-        String where = getTwoUniqueValuesForIN(featureService, uniqueFieldName, isStringField);
+        List<String> uniqueValues = featureService.getFieldUniqueValues(uniqueFieldName);
+
 
         for (int i=0; i<numRuns; i++) {
+          String where = getTwoUniqueValuesForIN(uniqueValues, uniqueFieldName, isStringField);
           Tuple tuple = featureService.getFeaturesWithWhereClause(where);
           stats[i] = tuple.requestTime * 1.0;
         }
@@ -375,10 +379,9 @@ public class FeatureServiceWithoutStatsTester {
     return ((long)min + (long)(width * starting)) + ","+ ((long)min + (long)(width * (starting + percentage)));
   }
 
-  private static String getTwoUniqueValuesForIN(FeatureService featureService, String fieldName, boolean isStringField) throws Exception {
+  private static String getTwoUniqueValuesForIN(List<String> uniqueValues, String fieldName, boolean isStringField) throws Exception {
     Random random = new Random();
 
-    List<String> uniqueValues = featureService.getFieldUniqueValues(fieldName);
     if (uniqueValues.size() == 0) throw new Exception("No unique values found!");
     if (uniqueValues.size() == 1) throw new Exception("Only have one value.");
     String uniqueValue1 = uniqueValues.get(0);

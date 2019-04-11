@@ -313,6 +313,7 @@ public class FeatureService {
         "{\"statisticType\":\"max\",\"onStatisticField\":\"" + fieldName + "\",\"outStatisticFieldName\":\"max\"}]";
     this.outStatistics = stats;
     this.where = "1=1";
+    this.resultRecordCount = 100000;
     //long start = System.currentTimeMillis();
     String queryParameters = composeGetRequestQueryParameters();
     String response = executeRequest(queryParameters);
@@ -338,7 +339,7 @@ public class FeatureService {
     JSONArray features = jsonObject.getJSONArray("features");
     for (int i=0; i<features.length(); i++) {
       JSONObject f = features.getJSONObject(i);
-      uniqueValues.add(f.getJSONObject("attributes").getString(fieldName));
+      uniqueValues.add(f.getJSONObject("attributes").get(fieldName).toString());
     }
     System.out.println(response);
     return uniqueValues;
